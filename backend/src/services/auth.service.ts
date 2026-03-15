@@ -2,7 +2,6 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import config from '../config';
 import { JwtPayload } from '../types';
-import { UserRole } from '@prisma/client';
 
 const SALT_ROUNDS = 12;
 
@@ -24,7 +23,7 @@ export const authService = {
   /**
    * Generate an access token (short-lived)
    */
-  generateAccessToken(userId: string, email: string, role: UserRole): string {
+  generateAccessToken(userId: string, email: string, role: string): string {
     const payload: JwtPayload = { userId, email, role };
     return jwt.sign(payload, config.jwt.secret, {
       expiresIn: config.jwt.expiresIn,
@@ -34,7 +33,7 @@ export const authService = {
   /**
    * Generate a refresh token (long-lived)
    */
-  generateRefreshToken(userId: string, email: string, role: UserRole): string {
+  generateRefreshToken(userId: string, email: string, role: string): string {
     const payload: JwtPayload = { userId, email, role };
     return jwt.sign(payload, config.jwt.refreshSecret, {
       expiresIn: config.jwt.refreshExpiresIn,
@@ -44,7 +43,7 @@ export const authService = {
   /**
    * Generate both access and refresh tokens
    */
-  generateTokenPair(userId: string, email: string, role: UserRole): {
+  generateTokenPair(userId: string, email: string, role: string): {
     accessToken: string;
     refreshToken: string;
   } {

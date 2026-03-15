@@ -1,14 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import config from '../config';
-import prisma from '../config/database';
-import { UserRole } from '@prisma/client';
+import User, { UserRole, UserStatus } from '../models/user.model';
 
 // JWT payload shape
 export interface JwtPayload {
   userId: string;
   email: string;
-  role: UserRole;
+  role: string;
   iat?: number;
   exp?: number;
 }
@@ -18,7 +17,7 @@ export interface AuthenticatedUser {
   id: string;
   email: string;
   name: string;
-  role: UserRole;
+  role: string;
   isActive: boolean;
 }
 
@@ -78,16 +77,9 @@ export const authenticate = async (
       return;
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        isActive: true,
-      },
-    });
+    const user = await User.findById(decoded.userId)
+      .select('email name role status')
+      .lean();
 
     if (!user) {
       res.status(401).json({
@@ -97,7 +89,7 @@ export const authenticate = async (
       return;
     }
 
-    if (!user.isActive) {
+    if (user.status !== UserStatus.ACTIVE) {
       res.status(403).json({
         success: false,
         error: 'Account has been deactivated. Please contact support.',
@@ -105,7 +97,13 @@ export const authenticate = async (
       return;
     }
 
-    req.user = user as AuthenticatedUser;
+    req.user = {
+      id: user._id.toString(),
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      isActive: user.status === UserStatus.ACTIVE,
+    };
     next();
   } catch (_error) {
     res.status(500).json({
@@ -121,7 +119,7 @@ export const authenticate = async (
  *
  * Usage: router.get('/admin', authenticate, authorize('ADMIN'), handler)
  */
-export const authorize = (...roles: UserRole[]) => {
+export const authorize = (...roles: string[]) => {
   return (req: Request, res: Response, next: NextFunction): void => {
     if (!req.user) {
       res.status(401).json({
@@ -160,19 +158,18 @@ export const optionalAuth = async (
       const token = authHeader.substring(7);
       const decoded = jwt.verify(token, config.jwt.secret) as JwtPayload;
 
-      const user = await prisma.user.findUnique({
-        where: { id: decoded.userId },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          role: true,
-          isActive: true,
-        },
-      });
+      const user = await User.findById(decoded.userId)
+        .select('email name role status')
+        .lean();
 
-      if (user && user.isActive) {
-        req.user = user as AuthenticatedUser;
+      if (user && user.status === UserStatus.ACTIVE) {
+        req.user = {
+          id: user._id.toString(),
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          isActive: true,
+        };
       }
     }
   } catch {
@@ -185,7 +182,7 @@ export const optionalAuth = async (
 /**
  * Helper to generate a JWT access token for a user.
  */
-export function generateAccessToken(user: { id: string; email: string; role: UserRole }): string {
+export function generateAccessToken(user: { id: string; email: string; role: string }): string {
   const payload: JwtPayload = {
     userId: user.id,
     email: user.email,
@@ -199,7 +196,7 @@ export function generateAccessToken(user: { id: string; email: string; role: Use
 /**
  * Helper to generate a JWT refresh token for a user.
  */
-export function generateRefreshToken(user: { id: string; email: string; role: UserRole }): string {
+export function generateRefreshToken(user: { id: string; email: string; role: string }): string {
   const payload: JwtPayload = {
     userId: user.id,
     email: user.email,
@@ -216,3 +213,5 @@ export function generateRefreshToken(user: { id: string; email: string; role: Us
 export function verifyRefreshToken(token: string): JwtPayload {
   return jwt.verify(token, config.jwt.refreshSecret) as JwtPayload;
 }
+
+export { UserRole };

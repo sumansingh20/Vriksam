@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import prisma from '../config/database';
+import User, { UserRole, UserStatus } from '../models/user.model';
 import authService from '../services/auth.service';
 import emailService from '../services/email.service';
 import { RegisterInput, LoginInput } from '../validators/auth.validator';
@@ -14,7 +14,7 @@ export const authController = {
       const { email, password, name, phone, role } = req.body as RegisterInput;
 
       // Check if user already exists
-      const existingUser = await prisma.user.findUnique({ where: { email } });
+      const existingUser = await User.findOne({ email }).lean();
       if (existingUser) {
         res.status(409).json({
           success: false,
@@ -26,52 +26,27 @@ export const authController = {
       // Hash password
       const hashedPassword = await authService.hashPassword(password);
 
+      // Determine role (only allow USER or PARTNER from registration)
+      const assignedRole = role === 'PARTNER' ? UserRole.PARTNER : UserRole.USER;
+
       // Create user
-      const user = await prisma.user.create({
-        data: {
-          email,
-          password: hashedPassword,
-          name,
-          phone: phone || null,
-          role: role === 'TECHNICIAN' ? 'TECHNICIAN' : 'CLIENT',
-        },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          role: true,
-          phone: true,
-          createdAt: true,
-        },
+      const user = await User.create({
+        email,
+        password: hashedPassword,
+        name,
+        phone: phone || undefined,
+        role: assignedRole,
+        status: UserStatus.ACTIVE,
+        emailVerified: false,
       });
 
-      // If CLIENT role, create client record
-      if (user.role === 'CLIENT') {
-        await prisma.client.create({
-          data: {
-            userId: user.id,
-            status: 'ACTIVE',
-          },
-        });
-      }
-
-      // If TECHNICIAN role, create technician record
-      if (user.role === 'TECHNICIAN') {
-        await prisma.technician.create({
-          data: {
-            userId: user.id,
-          },
-        });
-      }
+      const userId = user._id.toString();
 
       // Generate tokens
-      const tokens = authService.generateTokenPair(user.id, user.email, user.role);
+      const tokens = authService.generateTokenPair(userId, user.email, user.role);
 
       // Update last login
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { lastLogin: new Date() },
-      });
+      await User.findByIdAndUpdate(userId, { lastLoginAt: new Date() });
 
       // Send welcome email (non-blocking)
       emailService.sendWelcome({ email: user.email, name: user.name }).catch(console.error);
@@ -80,7 +55,13 @@ export const authController = {
         success: true,
         message: 'Account created successfully.',
         data: {
-          user,
+          user: {
+            id: userId,
+            email: user.email,
+            name: user.name,
+            role: user.role,
+            createdAt: user.createdAt,
+          },
           ...tokens,
         },
       });
@@ -101,19 +82,10 @@ export const authController = {
     try {
       const { email, password } = req.body as LoginInput;
 
-      // Find user by email
-      const user = await prisma.user.findUnique({
-        where: { email },
-        select: {
-          id: true,
-          email: true,
-          password: true,
-          name: true,
-          role: true,
-          isActive: true,
-          avatar: true,
-        },
-      });
+      // Find user by email (include password for verification)
+      const user = await User.findOne({ email })
+        .select('+password')
+        .lean();
 
       if (!user || !user.password) {
         res.status(401).json({
@@ -123,7 +95,7 @@ export const authController = {
         return;
       }
 
-      if (!user.isActive) {
+      if (user.status !== UserStatus.ACTIVE) {
         res.status(403).json({
           success: false,
           error: 'Account has been deactivated. Contact support.',
@@ -141,21 +113,20 @@ export const authController = {
         return;
       }
 
+      const userId = user._id.toString();
+
       // Generate tokens
-      const tokens = authService.generateTokenPair(user.id, user.email, user.role);
+      const tokens = authService.generateTokenPair(userId, user.email, user.role);
 
       // Update last login
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { lastLogin: new Date() },
-      });
+      await User.findByIdAndUpdate(userId, { lastLoginAt: new Date() });
 
       res.status(200).json({
         success: true,
         message: 'Login successful.',
         data: {
           user: {
-            id: user.id,
+            id: userId,
             email: user.email,
             name: user.name,
             role: user.role,
@@ -202,12 +173,11 @@ export const authController = {
       }
 
       // Verify user still exists and is active
-      const user = await prisma.user.findUnique({
-        where: { id: decoded.userId },
-        select: { id: true, email: true, role: true, isActive: true },
-      });
+      const user = await User.findById(decoded.userId)
+        .select('email role status')
+        .lean();
 
-      if (!user || !user.isActive) {
+      if (!user || user.status !== UserStatus.ACTIVE) {
         res.status(401).json({
           success: false,
           error: 'User not found or account deactivated.',
@@ -216,7 +186,11 @@ export const authController = {
       }
 
       // Generate new token pair
-      const tokens = authService.generateTokenPair(user.id, user.email, user.role);
+      const tokens = authService.generateTokenPair(
+        user._id.toString(),
+        user.email,
+        user.role
+      );
 
       res.status(200).json({
         success: true,
@@ -234,11 +208,9 @@ export const authController = {
 
   /**
    * POST /auth/logout
-   * Logout user (client-side token removal; server-side can be extended with token blacklist)
+   * Logout user (client-side token removal)
    */
   async logout(_req: Request, res: Response): Promise<void> {
-    // In a production system, you would add the token to a blacklist (Redis)
-    // For now, we rely on client-side token removal
     res.status(200).json({
       success: true,
       message: 'Logged out successfully.',
@@ -259,38 +231,9 @@ export const authController = {
         return;
       }
 
-      const user = await prisma.user.findUnique({
-        where: { id: req.user.id },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          role: true,
-          avatar: true,
-          phone: true,
-          isActive: true,
-          lastLogin: true,
-          createdAt: true,
-          client: {
-            select: {
-              id: true,
-              companyName: true,
-              type: true,
-              status: true,
-              city: true,
-            },
-          },
-          technician: {
-            select: {
-              id: true,
-              specialization: true,
-              rating: true,
-              totalVisits: true,
-              isAvailable: true,
-            },
-          },
-        },
-      });
+      const user = await User.findById(req.user.id)
+        .select('-password -refreshTokens -__v')
+        .lean();
 
       if (!user) {
         res.status(404).json({
@@ -302,7 +245,19 @@ export const authController = {
 
       res.status(200).json({
         success: true,
-        data: user,
+        data: {
+          id: user._id.toString(),
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          phone: user.phone,
+          avatar: user.avatar,
+          status: user.status,
+          emailVerified: user.emailVerified,
+          lastLoginAt: user.lastLoginAt,
+          preferences: user.preferences,
+          createdAt: user.createdAt,
+        },
       });
     } catch (error) {
       console.error('Get me error:', error);
@@ -322,13 +277,13 @@ export const authController = {
       const { email } = req.body;
 
       // Always return success to prevent email enumeration
-      const user = await prisma.user.findUnique({
-        where: { email },
-        select: { id: true, email: true, name: true },
-      });
+      const user = await User.findOne({ email }).select('email name').lean();
 
       if (user) {
-        const resetToken = authService.generateResetToken(user.id, user.email);
+        const resetToken = authService.generateResetToken(
+          user._id.toString(),
+          user.email
+        );
 
         // Send reset email (non-blocking)
         emailService
@@ -380,10 +335,7 @@ export const authController = {
       const hashedPassword = await authService.hashPassword(password);
 
       // Update password
-      await prisma.user.update({
-        where: { id: decoded.userId },
-        data: { password: hashedPassword },
-      });
+      await User.findByIdAndUpdate(decoded.userId, { password: hashedPassword });
 
       res.status(200).json({
         success: true,
