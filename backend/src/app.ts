@@ -107,6 +107,19 @@ export function createApp(): Express {
   app.use(config.app.apiPrefix, apiLimiter);
 
   // ---------------------------------------------------------------------------
+  // Root route
+  // ---------------------------------------------------------------------------
+  app.get('/', (_req, res) => {
+    res.status(200).json({
+      success: true,
+      name: 'VRIKSHAM API',
+      version: process.env.npm_package_version || '1.0.0',
+      health: '/health',
+      api: config.app.apiPrefix,
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // Health check (outside API prefix, no auth required)
   // ---------------------------------------------------------------------------
   app.get('/health', (_req, res) => {
