@@ -135,3 +135,17 @@ service-account.json
 .vercel
 
 /generated/prisma
+
+# ------------------------------------------------------------
+# Root-level artifacts (not part of monorepo)
+# ------------------------------------------------------------
+/package.json
+/tsconfig.json
+/prisma.config.ts
+/prisma/
+
+# Seed build artifacts
+backend/prisma/seeds/*.js
+backend/prisma/seeds/*.js.map
+backend/prisma/seeds/*.d.ts
+backend/prisma/seeds/*.d.ts.map
