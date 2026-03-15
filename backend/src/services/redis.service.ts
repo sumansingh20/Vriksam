@@ -106,7 +106,7 @@ class RedisService {
           const delay = Math.min(times * 200, 5000);
           return delay;
         },
-        lazyConnect: false,
+        lazyConnect: true,
         enableOfflineQueue: true,
         connectTimeout: 10000,
       });

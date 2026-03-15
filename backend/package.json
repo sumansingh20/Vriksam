@@ -5,8 +5,10 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc",
+    "build": "prisma generate && tsc",
     "start": "node dist/server.js",
+    "postinstall": "prisma generate || true",
+    "vercel-build": "prisma generate || true",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:migrate:prod": "prisma migrate deploy",
@@ -47,6 +49,7 @@
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "passport-jwt": "^4.0.1",
+    "prisma": "^6.4.1",
     "sharp": "^0.33.5",
     "stripe": "^17.7.0",
     "uuid": "^11.1.0",
@@ -71,7 +74,6 @@
     "@types/uuid": "^10.0.0",
     "@types/ws": "^8.5.12",
     "nodemon": "^3.1.9",
-    "prisma": "^6.4.1",
     "ts-node": "^10.9.2",
     "tsx": "^4.19.3",
     "typescript": "^5.7.3"
