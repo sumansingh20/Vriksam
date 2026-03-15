@@ -8,7 +8,7 @@ import { Leaf, Menu, X, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
-  { label: "Solutions", href: "/solutions" },
+  { label: "Marketplace", href: "/marketplace" },
   { label: "Pricing", href: "/pricing" },
   { label: "About", href: "/about" },
   { label: "Case Studies", href: "/case-studies" },

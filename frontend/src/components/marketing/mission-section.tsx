@@ -2,165 +2,149 @@
 
 import { useRef } from 'react';
 import { motion, useInView } from 'framer-motion';
-import { Brain, Leaf, Users } from 'lucide-react';
+import { Brain, Leaf, Shield, ArrowUpRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 /* -------------------------------------------------------------------------- */
-/*  Feature data                                                              */
+/*  Bento data — asymmetric grid, each cell a different visual treatment      */
 /* -------------------------------------------------------------------------- */
 
-const features = [
+const pillars = [
   {
     icon: Brain,
-    title: 'Smart Monitoring',
+    title: 'AI-Powered Plant Intelligence',
     description:
-      'AI-powered plant health tracking that detects issues before they become problems. Our computer vision system analyzes leaf patterns, soil moisture, and growth rates in real time.',
-    gradient: 'from-emerald-500 to-teal-500',
-    bgGlow: 'bg-emerald-500/10',
+      'Computer vision analyzes leaf patterns, soil moisture, and growth rates in real time — detecting issues days before they become visible.',
+    accent: 'emerald',
+    span: 'col-span-1 lg:col-span-2', // wide
+  },
+  {
+    icon: Shield,
+    title: 'Enterprise-Grade Reliability',
+    description:
+      'SOC 2 compliant infrastructure. 99.99% uptime with real-time failover, end-to-end encryption, and dedicated support.',
+    accent: 'gray',
+    span: 'col-span-1', // narrow
   },
   {
     icon: Leaf,
-    title: 'Sustainable Impact',
+    title: 'Measurable Sustainability',
     description:
-      'Measurable environmental benefits you can report. Track CO2 absorption, air quality improvements, and biodiversity scores with verified ESG-ready metrics.',
-    gradient: 'from-green-500 to-emerald-500',
-    bgGlow: 'bg-green-500/10',
-  },
-  {
-    icon: Users,
-    title: 'Expert Care',
-    description:
-      'Professional maintenance teams trained in urban horticulture. Scheduled visits, emergency response, and seasonal care programs tailored to your green assets.',
-    gradient: 'from-teal-500 to-green-500',
-    bgGlow: 'bg-teal-500/10',
+      'Track CO₂ absorption, air quality improvements, and biodiversity scores with audit-ready, ESG-compliant reporting your board can trust.',
+    accent: 'green',
+    span: 'col-span-1', // narrow
   },
 ];
 
 /* -------------------------------------------------------------------------- */
-/*  Card component                                                            */
-/* -------------------------------------------------------------------------- */
-
-function FeatureCard({
-  feature,
-  index,
-}: {
-  feature: (typeof features)[number];
-  index: number;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-  const isInView = useInView(ref, { once: true, margin: '-80px' });
-
-  return (
-    <motion.div
-      ref={ref}
-      initial={{ opacity: 0, y: 40 }}
-      animate={isInView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.6, delay: index * 0.15, ease: [0.22, 1, 0.36, 1] }}
-      className="group relative"
-    >
-      <div
-        className={cn(
-          'relative overflow-hidden rounded-3xl p-8',
-          'border border-white/60 bg-white/40 backdrop-blur-xl',
-          'shadow-lg shadow-emerald-500/[0.03]',
-          'transition-all duration-500',
-          'hover:border-emerald-200/80 hover:bg-white/70',
-          'hover:shadow-xl hover:shadow-emerald-500/[0.08]',
-          'hover:-translate-y-1',
-        )}
-      >
-        {/* Hover glow */}
-        <div
-          className={cn(
-            'absolute -top-20 -right-20 h-40 w-40 rounded-full blur-3xl',
-            'opacity-0 transition-opacity duration-500 group-hover:opacity-100',
-            feature.bgGlow,
-          )}
-        />
-
-        {/* Icon */}
-        <div className="relative mb-6">
-          <div
-            className={cn(
-              'flex h-14 w-14 items-center justify-center rounded-2xl',
-              'bg-gradient-to-br',
-              feature.gradient,
-              'shadow-lg',
-            )}
-          >
-            <feature.icon className="h-7 w-7 text-white" />
-          </div>
-        </div>
-
-        {/* Text */}
-        <h3 className="relative mb-3 text-xl font-bold text-gray-900">
-          {feature.title}
-        </h3>
-        <p className="relative text-base leading-relaxed text-gray-600">
-          {feature.description}
-        </p>
-
-        {/* Bottom accent bar */}
-        <div
-          className={cn(
-            'mt-6 h-1 w-12 rounded-full bg-gradient-to-r',
-            feature.gradient,
-            'opacity-40 transition-all duration-500',
-            'group-hover:w-20 group-hover:opacity-100',
-          )}
-        />
-      </div>
-    </motion.div>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-/*  Mission Section                                                           */
+/*  MissionSection — asymmetric bento layout with brand copy                  */
 /* -------------------------------------------------------------------------- */
 
 export function MissionSection() {
   const headingRef = useRef<HTMLDivElement>(null);
-  const isHeadingInView = useInView(headingRef, { once: true, margin: '-100px' });
+  const isHeadingInView = useInView(headingRef, { once: true, margin: '-80px' });
 
   return (
-    <section className="relative overflow-hidden py-24 sm:py-32">
-      {/* Subtle background */}
-      <div className="absolute inset-0 bg-gradient-to-b from-white via-emerald-50/20 to-white" />
-      <div className="absolute inset-0 bg-dot-pattern opacity-30" />
-
+    <section className="relative overflow-hidden bg-gray-50/60 py-24 sm:py-32">
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        {/* Section header */}
+        {/* Section header — left-aligned for editorial feel */}
         <motion.div
           ref={headingRef}
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 24 }}
           animate={isHeadingInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          className="mx-auto max-w-2xl text-center"
+          className="max-w-xl"
         >
-          <span className="mb-4 inline-block rounded-full bg-emerald-100 px-4 py-1.5 text-sm font-semibold text-emerald-700">
-            Our Mission
-          </span>
-          <h2 className="mt-4 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl md:text-5xl">
-            Making cities{' '}
-            <span className="bg-gradient-to-r from-emerald-600 to-green-500 bg-clip-text text-transparent">
-              greener
-            </span>
-            , one space at a time
+          <p className="text-sm font-semibold uppercase tracking-widest text-emerald-600">
+            Why Vriksham
+          </p>
+          <h2 className="mt-3 text-[clamp(1.75rem,4vw,3rem)] font-bold leading-[1.1] tracking-tight text-gray-900">
+            Technology that makes
+            <br />
+            green spaces thrive
           </h2>
-          <p className="mt-6 text-lg leading-relaxed text-gray-600">
-            We believe every urban space deserves thriving greenery. Our technology
-            and expert teams work together to transform concrete landscapes into
-            living, breathing ecosystems that benefit people and the planet.
+          <p className="mt-5 text-lg leading-relaxed text-gray-500">
+            We combine AI, IoT, and horticulture expertise to manage urban greenery at any
+            scale — from a single office floor to an entire city.
           </p>
         </motion.div>
 
-        {/* Feature cards */}
-        <div className="mt-16 grid gap-8 md:grid-cols-3">
-          {features.map((feature, i) => (
-            <FeatureCard key={feature.title} feature={feature} index={i} />
-          ))}
+        {/* Bento grid */}
+        <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {pillars.map((pillar, i) => {
+            const isWide = pillar.span.includes('col-span-2');
+            return (
+              <BentoCard key={pillar.title} pillar={pillar} index={i} isWide={isWide} />
+            );
+          })}
         </div>
       </div>
     </section>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*  BentoCard                                                                 */
+/* -------------------------------------------------------------------------- */
+
+function BentoCard({
+  pillar,
+  index,
+  isWide,
+}: {
+  pillar: (typeof pillars)[number];
+  index: number;
+  isWide: boolean;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const isInView = useInView(ref, { once: true, margin: '-60px' });
+
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 28 }}
+      animate={isInView ? { opacity: 1, y: 0 } : {}}
+      transition={{
+        duration: 0.55,
+        delay: index * 0.12,
+        ease: [0.22, 1, 0.36, 1],
+      }}
+      className={cn(
+        pillar.span,
+        'group relative',
+      )}
+    >
+      <div
+        className={cn(
+          'relative h-full overflow-hidden rounded-2xl p-8',
+          'bg-white border border-gray-200/80',
+          'shadow-sm',
+          'transition-all duration-400',
+          'hover:shadow-lg hover:shadow-black/[0.04]',
+          'hover:border-gray-300/80',
+          isWide && 'sm:p-10',
+        )}
+      >
+        {/* Icon */}
+        <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-gray-900">
+          <pillar.icon className="h-5 w-5 text-white" />
+        </div>
+
+        {/* Content */}
+        <h3 className="text-lg font-semibold text-gray-900">{pillar.title}</h3>
+        <p className={cn(
+          'mt-2.5 text-[15px] leading-relaxed text-gray-500',
+          isWide ? 'max-w-md' : 'max-w-sm',
+        )}>
+          {pillar.description}
+        </p>
+
+        {/* Hover arrow */}
+        <div className="mt-6 flex items-center gap-1.5 text-sm font-medium text-gray-400 transition-colors duration-200 group-hover:text-gray-900">
+          Learn more
+          <ArrowUpRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+        </div>
+      </div>
+    </motion.div>
   );
 }

@@ -2,7 +2,8 @@
 
 import { useState, useRef } from 'react';
 import { motion, useInView, AnimatePresence } from 'framer-motion';
-import { Check, Star, ArrowRight } from 'lucide-react';
+import { Check, ArrowRight } from 'lucide-react';
+import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
 /* -------------------------------------------------------------------------- */
@@ -12,81 +13,57 @@ import { cn } from '@/lib/utils';
 const plans = [
   {
     name: 'Starter',
-    description: 'Perfect for small offices and startups getting started with greenery.',
+    description: 'For small offices getting started with green infrastructure.',
     monthlyPrice: 4999,
     features: [
       'Up to 50 plants',
-      'Basic monitoring',
-      'Monthly maintenance',
+      'Basic health monitoring',
+      'Monthly maintenance visits',
       'Email support',
     ],
-    cta: 'Start Free Trial',
+    cta: 'Start free trial',
+    href: '/register',
     popular: false,
   },
   {
     name: 'Professional',
-    description: 'Ideal for growing companies that need comprehensive plant management.',
+    description: 'For growing companies that need comprehensive plant management.',
     monthlyPrice: 14999,
     features: [
       'Up to 200 plants',
-      'AI health monitoring',
-      'Weekly maintenance',
+      'AI-powered health monitoring',
+      'Weekly maintenance visits',
       'Priority support',
-      'ESG reports',
+      'ESG reporting dashboard',
     ],
-    cta: 'Start Free Trial',
+    cta: 'Start free trial',
+    href: '/register',
     popular: true,
   },
   {
     name: 'Enterprise',
-    description: 'For large organizations with complex, multi-site greenery needs.',
+    description: 'For large organizations with multi-site greenery programs.',
     monthlyPrice: 49999,
     features: [
       'Unlimited plants',
       'Advanced AI analytics',
       'Daily maintenance',
-      'Dedicated manager',
+      'Dedicated account manager',
       'Custom ESG reporting',
-      'API access',
+      'API access & integrations',
     ],
-    cta: 'Contact Sales',
+    cta: 'Contact sales',
+    href: '/contact',
     popular: false,
   },
 ];
 
 /* -------------------------------------------------------------------------- */
-/*  Price formatter                                                           */
+/*  Helpers                                                                   */
 /* -------------------------------------------------------------------------- */
 
 function formatPrice(price: number): string {
   return new Intl.NumberFormat('en-IN').format(price);
-}
-
-/* -------------------------------------------------------------------------- */
-/*  Animated price display                                                    */
-/* -------------------------------------------------------------------------- */
-
-function AnimatedPrice({ price, isAnnual }: { price: number; isAnnual: boolean }) {
-  const displayPrice = isAnnual ? Math.round(price * 0.8) : price;
-
-  return (
-    <div className="flex items-baseline gap-1">
-      <span className="text-sm font-medium text-gray-500">&#8377;</span>
-      <AnimatePresence mode="wait">
-        <motion.span
-          key={displayPrice}
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 10 }}
-          transition={{ duration: 0.3 }}
-          className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl"
-        >
-          {formatPrice(displayPrice)}
-        </motion.span>
-      </AnimatePresence>
-      <span className="text-sm font-medium text-gray-500">/mo</span>
-    </div>
-  );
 }
 
 /* -------------------------------------------------------------------------- */
@@ -104,93 +81,125 @@ function PricingCard({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { once: true, margin: '-60px' });
+  const displayPrice = isAnnual ? Math.round(plan.monthlyPrice * 0.8) : plan.monthlyPrice;
 
   return (
     <motion.div
       ref={ref}
-      initial={{ opacity: 0, y: 40 }}
+      initial={{ opacity: 0, y: 28 }}
       animate={isInView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.6, delay: index * 0.12, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.55, delay: index * 0.1, ease: [0.22, 1, 0.36, 1] }}
       className={cn(
-        'relative flex flex-col rounded-3xl p-8',
+        'relative flex flex-col rounded-2xl p-8',
+        'transition-all duration-300',
         plan.popular
-          ? 'border-2 border-emerald-400 bg-white shadow-2xl shadow-emerald-500/10'
-          : 'border border-gray-200 bg-white shadow-lg shadow-black/[0.03]',
-        'transition-all duration-300 hover:-translate-y-1',
-        plan.popular && 'hover:shadow-2xl hover:shadow-emerald-500/15',
+          ? 'bg-gray-900 text-white shadow-2xl shadow-gray-900/20'
+          : 'bg-white border border-gray-200/80 shadow-sm hover:shadow-lg hover:shadow-black/[0.04]',
       )}
     >
       {/* Popular badge */}
       {plan.popular && (
-        <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-emerald-500 to-green-500 px-4 py-1.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25">
-            <Star className="h-3.5 w-3.5 fill-current" />
-            Most Popular
+        <div className="absolute -top-3.5 left-8">
+          <span className="inline-block rounded-full bg-emerald-500 px-3.5 py-1 text-xs font-semibold text-white">
+            Most popular
           </span>
         </div>
       )}
 
-      {/* Glow effect for popular */}
-      {plan.popular && (
-        <div className="pointer-events-none absolute -inset-px rounded-3xl bg-gradient-to-b from-emerald-400/20 via-transparent to-emerald-400/10 opacity-60" />
+      {/* Plan name & description */}
+      <h3 className={cn(
+        'text-lg font-semibold',
+        plan.popular ? 'text-white' : 'text-gray-900',
+      )}>
+        {plan.name}
+      </h3>
+      <p className={cn(
+        'mt-2 text-sm',
+        plan.popular ? 'text-gray-400' : 'text-gray-500',
+      )}>
+        {plan.description}
+      </p>
+
+      {/* Price */}
+      <div className="mt-6 flex items-baseline gap-1">
+        <span className={cn(
+          'text-sm font-medium',
+          plan.popular ? 'text-gray-400' : 'text-gray-500',
+        )}>
+          ₹
+        </span>
+        <AnimatePresence mode="wait">
+          <motion.span
+            key={displayPrice}
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            transition={{ duration: 0.25 }}
+            className={cn(
+              'text-4xl font-bold tracking-tight',
+              plan.popular ? 'text-white' : 'text-gray-900',
+            )}
+          >
+            {formatPrice(displayPrice)}
+          </motion.span>
+        </AnimatePresence>
+        <span className={cn(
+          'text-sm font-medium',
+          plan.popular ? 'text-gray-400' : 'text-gray-500',
+        )}>
+          /mo
+        </span>
+      </div>
+      {isAnnual && (
+        <p className={cn(
+          'mt-1 text-xs font-medium',
+          plan.popular ? 'text-emerald-400' : 'text-emerald-600',
+        )}>
+          Save 20% with annual billing
+        </p>
       )}
 
-      <div className="relative">
-        {/* Plan name & description */}
-        <h3 className="text-xl font-bold text-gray-900">{plan.name}</h3>
-        <p className="mt-2 text-sm text-gray-500">{plan.description}</p>
+      {/* Divider */}
+      <div className={cn(
+        'my-6 h-px',
+        plan.popular ? 'bg-white/10' : 'bg-gray-100',
+      )} />
 
-        {/* Price */}
-        <div className="mt-6">
-          <AnimatedPrice price={plan.monthlyPrice} isAnnual={isAnnual} />
-          {isAnnual && (
-            <motion.p
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              className="mt-1 text-sm font-medium text-emerald-600"
-            >
-              Save 20% with annual billing
-            </motion.p>
-          )}
-        </div>
+      {/* Features */}
+      <ul className="flex flex-col gap-3 flex-1">
+        {plan.features.map((feature) => (
+          <li key={feature} className="flex items-center gap-3">
+            <div className={cn(
+              'flex h-5 w-5 shrink-0 items-center justify-center rounded-full',
+              plan.popular
+                ? 'bg-emerald-500/20 text-emerald-400'
+                : 'bg-gray-100 text-gray-500',
+            )}>
+              <Check className="h-3 w-3" />
+            </div>
+            <span className={cn(
+              'text-sm',
+              plan.popular ? 'text-gray-300' : 'text-gray-600',
+            )}>
+              {feature}
+            </span>
+          </li>
+        ))}
+      </ul>
 
-        {/* Divider */}
-        <div className="my-6 h-px bg-gray-100" />
-
-        {/* Features */}
-        <ul className="flex flex-col gap-3">
-          {plan.features.map((feature) => (
-            <li key={feature} className="flex items-center gap-3">
-              <div
-                className={cn(
-                  'flex h-5 w-5 shrink-0 items-center justify-center rounded-full',
-                  plan.popular
-                    ? 'bg-emerald-100 text-emerald-600'
-                    : 'bg-gray-100 text-gray-600',
-                )}
-              >
-                <Check className="h-3 w-3" />
-              </div>
-              <span className="text-sm text-gray-700">{feature}</span>
-            </li>
-          ))}
-        </ul>
-
-        {/* CTA */}
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          className={cn(
-            'mt-8 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-semibold transition-all duration-200',
-            plan.popular
-              ? 'bg-gradient-to-r from-emerald-500 to-green-500 text-white shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40'
-              : 'border border-gray-200 bg-white text-gray-700 hover:border-emerald-300 hover:text-emerald-700',
-          )}
-        >
-          {plan.cta}
-          <ArrowRight className="h-4 w-4" />
-        </motion.button>
-      </div>
+      {/* CTA */}
+      <Link
+        href={plan.href}
+        className={cn(
+          'mt-8 flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold transition-all duration-200',
+          plan.popular
+            ? 'bg-white text-gray-900 hover:bg-gray-100'
+            : 'bg-gray-900 text-white hover:bg-gray-800',
+        )}
+      >
+        {plan.cta}
+        <ArrowRight className="h-4 w-4" />
+      </Link>
     </motion.div>
   );
 }
@@ -202,79 +211,63 @@ function PricingCard({
 export function PricingSection() {
   const [isAnnual, setIsAnnual] = useState(false);
   const headingRef = useRef<HTMLDivElement>(null);
-  const isHeadingInView = useInView(headingRef, { once: true, margin: '-100px' });
+  const isHeadingInView = useInView(headingRef, { once: true, margin: '-80px' });
 
   return (
-    <section className="relative overflow-hidden py-24 sm:py-32">
-      {/* Background */}
-      <div className="absolute inset-0 bg-gradient-to-b from-white via-emerald-50/30 to-white" />
-      <div className="absolute inset-0 bg-dot-pattern opacity-20" />
-
+    <section className="relative overflow-hidden bg-gray-50/60 py-24 sm:py-32">
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Section header */}
         <motion.div
           ref={headingRef}
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 24 }}
           animate={isHeadingInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
           className="mx-auto max-w-2xl text-center"
         >
-          <span className="mb-4 inline-block rounded-full bg-emerald-100 px-4 py-1.5 text-sm font-semibold text-emerald-700">
+          <p className="text-sm font-semibold uppercase tracking-widest text-emerald-600">
             Pricing
-          </span>
-          <h2 className="mt-4 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl md:text-5xl">
-            Simple,{' '}
-            <span className="bg-gradient-to-r from-emerald-600 to-green-500 bg-clip-text text-transparent">
-              transparent
-            </span>{' '}
-            pricing
+          </p>
+          <h2 className="mt-3 text-[clamp(1.75rem,4vw,3rem)] font-bold leading-[1.1] tracking-tight text-gray-900">
+            Transparent pricing,
+            <br className="hidden sm:block" />
+            no hidden fees
           </h2>
-          <p className="mt-6 text-lg leading-relaxed text-gray-600">
-            Choose the plan that fits your greenery needs. All plans include a 14-day
-            free trial.
+          <p className="mt-5 text-lg leading-relaxed text-gray-500">
+            Every plan includes a 14-day free trial. No credit card required.
           </p>
 
           {/* Toggle */}
-          <div className="mt-10 flex items-center justify-center gap-4">
-            <span
+          <div className="mt-8 inline-flex items-center gap-3 rounded-full border border-gray-200 bg-white p-1.5">
+            <button
+              onClick={() => setIsAnnual(false)}
               className={cn(
-                'text-sm font-medium transition-colors',
-                !isAnnual ? 'text-gray-900' : 'text-gray-400',
+                'rounded-full px-4 py-1.5 text-sm font-medium transition-all duration-200',
+                !isAnnual
+                  ? 'bg-gray-900 text-white'
+                  : 'text-gray-500 hover:text-gray-700',
               )}
             >
               Monthly
-            </span>
-            <button
-              onClick={() => setIsAnnual(!isAnnual)}
-              className={cn(
-                'relative h-7 w-12 rounded-full transition-colors duration-300',
-                isAnnual ? 'bg-emerald-500' : 'bg-gray-300',
-              )}
-              aria-label="Toggle annual billing"
-            >
-              <motion.div
-                animate={{ x: isAnnual ? 22 : 2 }}
-                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                className="h-5 w-5 rounded-full bg-white shadow-sm"
-                style={{ position: 'absolute', top: '4px' }}
-              />
             </button>
-            <span
+            <button
+              onClick={() => setIsAnnual(true)}
               className={cn(
-                'text-sm font-medium transition-colors',
-                isAnnual ? 'text-gray-900' : 'text-gray-400',
+                'rounded-full px-4 py-1.5 text-sm font-medium transition-all duration-200',
+                isAnnual
+                  ? 'bg-gray-900 text-white'
+                  : 'text-gray-500 hover:text-gray-700',
               )}
             >
               Annual
-              <span className="ml-1.5 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+              <span className="ml-1.5 text-xs font-semibold text-emerald-500">
                 -20%
               </span>
-            </span>
+            </button>
           </div>
         </motion.div>
 
         {/* Pricing cards */}
-        <div className="mt-16 grid gap-8 lg:grid-cols-3">
+        <div className="mt-14 grid gap-6 lg:grid-cols-3">
           {plans.map((plan, i) => (
             <PricingCard key={plan.name} plan={plan} isAnnual={isAnnual} index={i} />
           ))}

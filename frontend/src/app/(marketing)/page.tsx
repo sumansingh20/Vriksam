@@ -10,13 +10,28 @@ import { CTASection } from '@/components/marketing/cta-section';
 export default function MarketingPage() {
   return (
     <>
+      {/* 1. Cinematic hero — full viewport, 3D scene */}
       <HeroSection />
+
+      {/* 2. Social proof numbers — light, airy */}
       <StatsSection />
+
+      {/* 3. Why Vriksham — bento grid with brand pillars */}
       <MissionSection />
+
+      {/* 4. Solutions — tabbed vertical layout */}
       <SolutionsSection />
+
+      {/* 5. Features — bento grid with varied card sizes */}
       <FeaturesGrid />
-      <PricingSection />
+
+      {/* 6. Testimonials — large carousel */}
       <TestimonialsSection />
+
+      {/* 7. Pricing — dark featured card */}
+      <PricingSection />
+
+      {/* 8. Final CTA — dark, minimal */}
       <CTASection />
     </>
   );
