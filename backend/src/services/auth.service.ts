@@ -27,7 +27,7 @@ export const authService = {
     const payload: JwtPayload = { userId, email, role };
     return jwt.sign(payload, config.jwt.secret, {
       expiresIn: config.jwt.expiresIn,
-    });
+    } as jwt.SignOptions);
   },
 
   /**
@@ -37,7 +37,7 @@ export const authService = {
     const payload: JwtPayload = { userId, email, role };
     return jwt.sign(payload, config.jwt.refreshSecret, {
       expiresIn: config.jwt.refreshExpiresIn,
-    });
+    } as jwt.SignOptions);
   },
 
   /**

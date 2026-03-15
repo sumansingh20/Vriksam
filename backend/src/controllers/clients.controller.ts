@@ -83,7 +83,7 @@ export const clientsController = {
    */
   async getById(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
 
       const client = await prisma.client.findUnique({
         where: { id },
@@ -219,7 +219,7 @@ export const clientsController = {
    */
   async update(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const data = req.body;
 
       const updateData: Prisma.ClientUpdateInput = {};
@@ -276,7 +276,7 @@ export const clientsController = {
    */
   async delete(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
 
       const client = await prisma.client.update({
         where: { id },
@@ -308,7 +308,7 @@ export const clientsController = {
    */
   async getLocations(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
 
       const client = await prisma.client.findUnique({ where: { id } });
       if (!client) {
@@ -343,7 +343,7 @@ export const clientsController = {
    */
   async getPlants(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
 
       const client = await prisma.client.findUnique({
         where: { id },
@@ -355,7 +355,7 @@ export const clientsController = {
         return;
       }
 
-      const locationIds = client.locations.map((l) => l.id);
+      const locationIds = (client as any).locations.map((l: any) => l.id);
 
       const plants = await prisma.plant.findMany({
         where: { locationId: { in: locationIds }, isActive: true },
@@ -389,7 +389,7 @@ export const clientsController = {
    */
   async getSubscriptions(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
 
       const client = await prisma.client.findUnique({ where: { id } });
       if (!client) {

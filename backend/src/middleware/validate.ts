@@ -35,9 +35,9 @@ export const validate = (
       if (target === 'body') {
         req.body = parsed;
       } else if (target === 'query') {
-        (req as Record<string, unknown>).query = parsed;
+        (req as unknown as Record<string, unknown>).query = parsed;
       } else if (target === 'params') {
-        (req as Record<string, unknown>).params = parsed;
+        (req as unknown as Record<string, unknown>).params = parsed;
       }
 
       next();
@@ -90,9 +90,9 @@ export const validateMany = (
         if (target === 'body') {
           req.body = parsed;
         } else if (target === 'query') {
-          (req as Record<string, unknown>).query = parsed;
+          (req as unknown as Record<string, unknown>).query = parsed;
         } else if (target === 'params') {
-          (req as Record<string, unknown>).params = parsed;
+          (req as unknown as Record<string, unknown>).params = parsed;
         }
       } catch (error) {
         if (error instanceof ZodError) {

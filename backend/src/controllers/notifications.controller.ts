@@ -52,7 +52,7 @@ const notificationsController = {
   async markAsRead(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user!.id;
-      const notificationId = req.params.id;
+      const notificationId = req.params.id as string;
 
       if (!notificationId) {
         res.status(400).json({
@@ -116,7 +116,7 @@ const notificationsController = {
   async deleteNotification(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user!.id;
-      const notificationId = req.params.id;
+      const notificationId = req.params.id as string;
 
       if (!notificationId) {
         res.status(400).json({

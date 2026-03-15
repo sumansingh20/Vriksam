@@ -79,7 +79,7 @@ export const techniciansController = {
    */
   async getById(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
 
       const technician = await prisma.technician.findUnique({
         where: { id },
@@ -204,7 +204,7 @@ export const techniciansController = {
    */
   async update(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const data = req.body;
 
       const updateData: Prisma.TechnicianUpdateInput = {};
@@ -249,7 +249,7 @@ export const techniciansController = {
    */
   async delete(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
 
       const technician = await prisma.technician.update({
         where: { id },
@@ -281,7 +281,7 @@ export const techniciansController = {
    */
   async getSchedule(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const { from, to } = req.query;
 
       const technician = await prisma.technician.findUnique({ where: { id } });
@@ -349,7 +349,7 @@ export const techniciansController = {
    */
   async getPerformance(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
 
       const technician = await prisma.technician.findUnique({
         where: { id },
@@ -413,7 +413,7 @@ export const techniciansController = {
         success: true,
         data: {
           technicianId: id,
-          name: technician.user.name,
+          name: (technician as any).user.name,
           totalVisits,
           completedVisits,
           missedVisits,

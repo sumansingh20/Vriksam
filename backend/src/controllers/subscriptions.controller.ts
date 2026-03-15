@@ -79,7 +79,7 @@ export const subscriptionsController = {
    */
   async getById(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
 
       const subscription = await prisma.subscription.findUnique({
         where: { id },
@@ -190,7 +190,7 @@ export const subscriptionsController = {
    */
   async update(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const data = req.body;
 
       const updateData: Prisma.SubscriptionUpdateInput = {};
@@ -229,7 +229,7 @@ export const subscriptionsController = {
    */
   async delete(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
 
       const subscription = await prisma.subscription.update({
         where: { id },
@@ -265,7 +265,7 @@ export const subscriptionsController = {
    */
   async pause(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const { reason } = req.body;
 
       const subscription = await prisma.subscription.findUnique({ where: { id } });
@@ -321,7 +321,7 @@ export const subscriptionsController = {
    */
   async resume(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
 
       const subscription = await prisma.subscription.findUnique({ where: { id } });
       if (!subscription) {
@@ -375,7 +375,7 @@ export const subscriptionsController = {
    */
   async cancel(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const { reason, immediate } = req.body;
 
       const subscription = await prisma.subscription.findUnique({ where: { id } });

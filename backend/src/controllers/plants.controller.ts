@@ -94,7 +94,7 @@ export const plantsController = {
    */
   async getById(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
 
       const plant = await prisma.plant.findUnique({
         where: { id },
@@ -211,7 +211,7 @@ export const plantsController = {
    */
   async update(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const data = req.body;
 
       const updateData: Prisma.PlantUpdateInput = {};
@@ -258,7 +258,7 @@ export const plantsController = {
    */
   async delete(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
 
       const plant = await prisma.plant.update({
         where: { id },
@@ -290,7 +290,7 @@ export const plantsController = {
    */
   async getHealthLogs(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const { page, limit, skip } = parsePagination(req.query);
 
       const plant = await prisma.plant.findUnique({ where: { id } });
@@ -331,7 +331,7 @@ export const plantsController = {
    */
   async createHealthCheck(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const data = req.body;
 
       const plant = await prisma.plant.findUnique({ where: { id } });

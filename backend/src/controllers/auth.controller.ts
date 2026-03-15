@@ -27,7 +27,7 @@ export const authController = {
       const hashedPassword = await authService.hashPassword(password);
 
       // Determine role (only allow USER or PARTNER from registration)
-      const assignedRole = role === 'PARTNER' ? UserRole.PARTNER : UserRole.USER;
+      const assignedRole = (role as string) === 'PARTNER' ? UserRole.PARTNER : UserRole.USER;
 
       // Create user
       const user = await User.create({

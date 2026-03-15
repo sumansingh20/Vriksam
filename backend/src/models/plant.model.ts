@@ -164,21 +164,14 @@ plantSchema.index({ status: 1 });
 // ---------------------------------------------------------------------------
 // Pre-save hook: auto-generate VRK-XXXXX plant ID
 // ---------------------------------------------------------------------------
-plantSchema.pre('save', async function (next) {
+plantSchema.pre('save', async function () {
   if (this.isNew && !this.plantId) {
-    try {
-      const counter = await Counter.findByIdAndUpdate(
-        'plantId',
-        { $inc: { seq: 1 } },
-        { new: true, upsert: true },
-      );
-      this.plantId = `VRK-${String(counter.seq).padStart(5, '0')}`;
-      next();
-    } catch (error) {
-      next(error as Error);
-    }
-  } else {
-    next();
+    const counter = await (Counter.findByIdAndUpdate as any)(
+      'plantId',
+      { $inc: { seq: 1 } },
+      { new: true, upsert: true },
+    );
+    this.plantId = `VRK-${String(counter.seq).padStart(5, '0')}`;
   }
 });
 

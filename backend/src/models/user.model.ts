@@ -53,7 +53,7 @@ export interface IUser {
 
 export interface IUserDocument extends IUser, Document {
   comparePassword(candidatePassword: string): Promise<boolean>;
-  toJSON(): Omit<IUser, 'password' | 'refreshTokens'>;
+  toJSON(): Record<string, any> & { _id: mongoose.Types.ObjectId; __v: number };
 }
 
 export interface IUserModel extends Model<IUserDocument> {}

@@ -70,7 +70,7 @@ export const usersController = {
    */
   async getById(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
 
       const user = await prisma.user.findUnique({
         where: { id },
@@ -136,7 +136,7 @@ export const usersController = {
    */
   async update(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const { name, phone, avatar, isActive } = req.body;
 
       // Users can only update themselves unless they're admin
@@ -199,7 +199,7 @@ export const usersController = {
    */
   async delete(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
 
       // Prevent self-deletion
       if (req.user && req.user.id === id) {

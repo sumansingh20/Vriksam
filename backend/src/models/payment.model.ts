@@ -149,23 +149,16 @@ paymentSchema.index({ invoiceNumber: 1 }, { unique: true });
 // ---------------------------------------------------------------------------
 // Pre-save hook: auto-generate invoice number
 // ---------------------------------------------------------------------------
-paymentSchema.pre('save', async function (next) {
+paymentSchema.pre('save', async function () {
   if (this.isNew && !this.invoiceNumber) {
-    try {
-      const now = new Date();
-      const yearMonth = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`;
-      const counter = await InvoiceCounter.findByIdAndUpdate(
-        'invoiceNumber',
-        { $inc: { seq: 1 } },
-        { new: true, upsert: true },
-      );
-      this.invoiceNumber = `VRK-INV-${yearMonth}-${String(counter.seq).padStart(4, '0')}`;
-      next();
-    } catch (error) {
-      next(error as Error);
-    }
-  } else {
-    next();
+    const now = new Date();
+    const yearMonth = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const counter = await (InvoiceCounter.findByIdAndUpdate as any)(
+      'invoiceNumber',
+      { $inc: { seq: 1 } },
+      { new: true, upsert: true },
+    );
+    this.invoiceNumber = `VRK-INV-${yearMonth}-${String(counter.seq).padStart(4, '0')}`;
   }
 });
 

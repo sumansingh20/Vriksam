@@ -107,7 +107,7 @@ export const maintenanceController = {
    */
   async getById(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
 
       const visit = await prisma.serviceVisit.findUnique({
         where: { id },
@@ -214,7 +214,7 @@ export const maintenanceController = {
    */
   async update(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const data = req.body;
 
       const updateData: Prisma.ServiceVisitUpdateInput = {};
@@ -261,7 +261,7 @@ export const maintenanceController = {
    */
   async delete(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
 
       const visit = await prisma.serviceVisit.update({
         where: { id },
@@ -293,7 +293,7 @@ export const maintenanceController = {
    */
   async complete(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const { notes, beforeImageUrl, afterImageUrl, durationMinutes, rating, clientFeedback } = req.body;
 
       const visit = await prisma.serviceVisit.findUnique({ where: { id } });

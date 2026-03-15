@@ -91,7 +91,7 @@ export const inventoryController = {
    */
   async getById(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
 
       const item = await prisma.inventory.findUnique({
         where: { id },
@@ -191,7 +191,7 @@ export const inventoryController = {
    */
   async update(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const data = req.body;
 
       const updateData: Prisma.InventoryUpdateInput = {};
@@ -235,7 +235,7 @@ export const inventoryController = {
    */
   async delete(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
 
       await prisma.inventory.delete({ where: { id } });
 
@@ -262,7 +262,7 @@ export const inventoryController = {
    */
   async restock(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       const { quantity, cost, supplier, notes } = req.body;
 
       if (!quantity || quantity <= 0) {
