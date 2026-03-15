@@ -131,3 +131,7 @@ service-account.json
 *.pid
 *.seed
 *.pid.lock
+
+.vercel
+
+/generated/prisma

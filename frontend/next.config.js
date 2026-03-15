@@ -193,8 +193,6 @@ const nextConfig = {
   poweredByHeader: false,
 
   compress: true,
-
-  output: "standalone",
 };
 
 module.exports = nextConfig;

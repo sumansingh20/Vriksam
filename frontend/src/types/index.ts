@@ -116,7 +116,7 @@ export type {
   ID,
   Nullable,
   DeepPartial,
-} from '../../../shared/types';
+} from './shared';
 
 export {
   // Enums
@@ -139,7 +139,7 @@ export {
   InventoryStatus,
   LocationType,
   PlantPlacement,
-} from '../../../shared/types';
+} from './shared';
 
 // -----------------------------------------------------------------------------
 // Frontend-Specific Types
