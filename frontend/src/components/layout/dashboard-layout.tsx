@@ -70,22 +70,7 @@ export function DashboardLayout({
   }, []);
 
   return (
-    <div className="relative flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950">
-      {/* Background Pattern */}
-      <div className="pointer-events-none fixed inset-0 z-0">
-        {/* Subtle gradient */}
-        <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/50 via-transparent to-teal-50/30 dark:from-emerald-950/20 dark:via-transparent dark:to-teal-950/10" />
-        {/* Dot grid */}
-        <div
-          className="absolute inset-0 opacity-[0.4] dark:opacity-[0.15]"
-          style={{
-            backgroundImage:
-              "radial-gradient(circle, rgba(16,185,129,0.07) 1px, transparent 1px)",
-            backgroundSize: "32px 32px",
-          }}
-        />
-      </div>
-
+    <div className="relative flex h-screen overflow-hidden bg-[#fafafa]">
       {/* Desktop Sidebar */}
       <div className="hidden lg:block">
         <Sidebar

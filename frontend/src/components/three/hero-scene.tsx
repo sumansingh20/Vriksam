@@ -175,13 +175,13 @@ export function HeroSceneContent({
       {/* Camera rig for slow orbit */}
       <CameraRig speed={speed} />
 
-      {/* Fog for depth */}
-      <fog attach="fog" args={['#0a2a1a', 4, 18]} />
+      {/* Softer fog — blends better with light hero section */}
+      <fog attach="fog" args={['#1a2e1a', 5, 20]} />
 
-      {/* Ambient fill lighting */}
-      <ambientLight intensity={0.25} color="#a7f3d0" />
-      <directionalLight position={[3, 6, 2]} intensity={0.5} color="#fef9c3" />
-      <directionalLight position={[-2, 3, -4]} intensity={0.2} color="#bae6fd" />
+      {/* Lighting — warmer, more cinematic */}
+      <ambientLight intensity={0.35} color="#d1fae5" />
+      <directionalLight position={[5, 8, 3]} intensity={0.6} color="#fef9c3" />
+      <directionalLight position={[-3, 4, -5]} intensity={0.25} color="#bae6fd" />
 
       {/* Floating plants at various depths */}
       {plants.map((plant, i) => (
@@ -198,24 +198,24 @@ export function HeroSceneContent({
       {/* Particle field */}
       <ParticleField
         count={particleCount}
-        spread={7}
-        speed={speed * 0.6}
-        size={0.035}
+        spread={8}
+        speed={speed * 0.5}
+        size={0.03}
         enableLeaves
       />
 
-      {/* Background glow orbs for atmosphere */}
-      <GlowOrb position={[-3, 2, -4]} color="#10b981" size={2.0} />
-      <GlowOrb position={[4, -1, -5]} color="#059669" size={2.5} />
-      <GlowOrb position={[0, 3, -6]} color="#34d399" size={3.0} />
+      {/* Background glow orbs — subtler */}
+      <GlowOrb position={[-3, 2, -5]} color="#10b981" size={2.5} />
+      <GlowOrb position={[4, -1, -6]} color="#059669" size={3.0} />
+      <GlowOrb position={[0, 3, -7]} color="#34d399" size={3.5} />
 
       {/* Firefly accent lights */}
-      <Fireflies count={5} />
+      <Fireflies count={6} />
 
-      {/* Soft ground-level glow plane */}
-      <mesh position={[0, -3, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[30, 30]} />
-        <meshBasicMaterial color="#0a2a1a" transparent opacity={0.4} />
+      {/* Ground plane — subtler */}
+      <mesh position={[0, -3.5, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[40, 40]} />
+        <meshBasicMaterial color="#0f2a0f" transparent opacity={0.3} />
       </mesh>
     </group>
   );

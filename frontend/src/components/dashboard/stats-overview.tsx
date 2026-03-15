@@ -15,7 +15,7 @@ export interface StatItem {
   formattedValue?: string;
   prefix?: string;
   suffix?: string;
-  change: number; // percentage, positive = up
+  change: number;
   icon: LucideIcon;
   sparklineData?: number[];
   iconColor?: string;
@@ -47,20 +47,13 @@ function AnimatedCounter({
   useEffect(() => {
     const duration = 1500;
     const startTime = performance.now();
-    const startValue = 0;
 
     function animate(currentTime: number) {
       const elapsed = currentTime - startTime;
       const progress = Math.min(elapsed / duration, 1);
-      // Ease out cubic
       const eased = 1 - Math.pow(1 - progress, 3);
-      const current = Math.round(startValue + (value - startValue) * eased);
-
-      setDisplay(current);
-
-      if (progress < 1) {
-        requestAnimationFrame(animate);
-      }
+      setDisplay(Math.round(value * eased));
+      if (progress < 1) requestAnimationFrame(animate);
     }
 
     requestAnimationFrame(animate);
@@ -69,7 +62,7 @@ function AnimatedCounter({
   return (
     <span ref={ref} className="tabular-nums">
       {prefix}
-      {formatted ?? display.toLocaleString()}
+      {formatted ?? display.toLocaleString('en-IN')}
       {suffix}
     </span>
   );
@@ -79,34 +72,27 @@ function AnimatedCounter({
 /*  Sparkline                                                                 */
 /* -------------------------------------------------------------------------- */
 
-function Sparkline({ data, color }: { data: number[]; color: string }) {
+function Sparkline({ data, positive }: { data: number[]; positive: boolean }) {
   if (data.length < 2) return null;
 
-  const width = 80;
-  const height = 32;
+  const width = 72;
+  const height = 28;
   const max = Math.max(...data);
   const min = Math.min(...data);
   const range = max - min || 1;
 
   const points = data.map((d, i) => {
     const x = (i / (data.length - 1)) * width;
-    const y = height - ((d - min) / range) * height;
+    const y = height - ((d - min) / range) * (height - 4) - 2;
     return `${x},${y}`;
   });
 
   const linePath = `M${points.join(' L')}`;
-  const areaPath = `${linePath} L${width},${height} L0,${height} Z`;
+  const color = positive ? '#10b981' : '#ef4444';
 
   return (
     <svg width={width} height={height} className="overflow-visible">
-      <defs>
-        <linearGradient id={`spark-${color}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity={0.3} />
-          <stop offset="100%" stopColor={color} stopOpacity={0.02} />
-        </linearGradient>
-      </defs>
-      <path d={areaPath} fill={`url(#spark-${color})`} />
-      <path d={linePath} fill="none" stroke={color} strokeWidth={1.5} strokeLinecap="round" />
+      <path d={linePath} fill="none" stroke={color} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -118,29 +104,23 @@ function Sparkline({ data, color }: { data: number[]; color: string }) {
 function StatCard({ stat, index }: { stat: StatItem; index: number }) {
   const Icon = stat.icon;
   const isPositive = stat.change >= 0;
-  const iconColor = stat.iconColor ?? 'text-emerald-600';
-  const iconBg = stat.iconBg ?? 'bg-emerald-500/10';
-  const sparkColor = isPositive ? '#10b981' : '#ef4444';
+  const iconColor = stat.iconColor ?? 'text-gray-600';
+  const iconBg = stat.iconBg ?? 'bg-gray-100';
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.1, duration: 0.5 }}
-      className="group relative overflow-hidden rounded-2xl border border-gray-200/60 bg-white/80 p-5 backdrop-blur-xl transition-all duration-300 hover:border-emerald-200/60 hover:shadow-glow-sm dark:border-white/5 dark:bg-gray-900/50 dark:hover:border-emerald-500/20"
+      transition={{ delay: index * 0.08, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+      className="rounded-xl border border-gray-200 bg-white p-5"
     >
-      {/* Background glow */}
-      <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-emerald-500/5 opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100" />
-
-      <div className="relative z-10 flex items-start justify-between">
+      <div className="flex items-start justify-between">
         <div className="flex-1">
-          <div className={cn('mb-3 inline-flex rounded-xl p-2.5', iconBg)}>
-            <Icon className={cn('h-5 w-5', iconColor)} />
+          <div className={cn('mb-3 inline-flex rounded-lg p-2', iconBg)}>
+            <Icon className={cn('h-4.5 w-4.5', iconColor)} />
           </div>
-          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-            {stat.title}
-          </p>
-          <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">
+          <p className="text-sm text-gray-500">{stat.title}</p>
+          <p className="mt-1 text-2xl font-semibold text-gray-900">
             <AnimatedCounter
               value={stat.value}
               prefix={stat.prefix}
@@ -150,22 +130,18 @@ function StatCard({ stat, index }: { stat: StatItem; index: number }) {
           </p>
         </div>
 
-        {/* Sparkline */}
         {stat.sparklineData && (
-          <div className="mt-2">
-            <Sparkline data={stat.sparklineData} color={sparkColor} />
+          <div className="mt-6">
+            <Sparkline data={stat.sparklineData} positive={isPositive} />
           </div>
         )}
       </div>
 
-      {/* Change indicator */}
       <div className="mt-3 flex items-center gap-1.5">
         <span
           className={cn(
-            'inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold',
-            isPositive
-              ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
-              : 'bg-red-500/10 text-red-700 dark:text-red-400'
+            'inline-flex items-center gap-0.5 text-xs font-medium',
+            isPositive ? 'text-emerald-600' : 'text-red-600'
           )}
         >
           {isPositive ? (

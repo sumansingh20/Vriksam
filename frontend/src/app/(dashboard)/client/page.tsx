@@ -41,13 +41,13 @@ function QuickStat({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
-      className="rounded-2xl border border-gray-200/60 bg-white/80 p-5 backdrop-blur-xl dark:border-white/5 dark:bg-gray-900/50"
+      className="rounded-xl border border-gray-200 bg-white p-5"
     >
-      <div className={cn('mb-3 inline-flex rounded-xl p-2.5', bg)}>
+      <div className={cn('mb-3 inline-flex rounded-lg p-2.5', bg)}>
         <Icon className={cn('h-5 w-5', color)} />
       </div>
-      <p className="text-sm text-gray-500 dark:text-gray-400">{label}</p>
-      <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">{value}</p>
+      <p className="text-sm text-gray-500">{label}</p>
+      <p className="mt-1 text-2xl font-bold text-gray-900">{value}</p>
       {subtitle && (
         <p className="mt-1 text-xs text-gray-400">{subtitle}</p>
       )}
@@ -71,22 +71,22 @@ function ESGSummaryCard() {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-2xl border border-gray-200/60 bg-white/80 p-5 backdrop-blur-xl dark:border-white/5 dark:bg-gray-900/50"
+      className="rounded-xl border border-gray-200 bg-white p-5"
     >
-      <h3 className="mb-4 text-sm font-semibold text-gray-900 dark:text-white">
+      <h3 className="mb-4 text-sm font-semibold text-gray-900">
         ESG Impact Summary
       </h3>
       <div className="grid grid-cols-2 gap-3">
         {metrics.map((metric) => {
           const Icon = metric.icon;
           return (
-            <div key={metric.label} className="flex items-center gap-3 rounded-xl bg-gray-50/80 p-3 dark:bg-white/[0.03]">
+            <div key={metric.label} className="flex items-center gap-3 rounded-lg bg-gray-50 p-3">
               <div className={cn('flex h-9 w-9 items-center justify-center rounded-lg', metric.bg)}>
                 <Icon className={cn('h-4 w-4', metric.color)} />
               </div>
               <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{metric.label}</p>
-                <p className="text-sm font-bold text-gray-900 dark:text-white">{metric.value}</p>
+                <p className="text-xs text-gray-500">{metric.label}</p>
+                <p className="text-sm font-bold text-gray-900">{metric.value}</p>
               </div>
             </div>
           );

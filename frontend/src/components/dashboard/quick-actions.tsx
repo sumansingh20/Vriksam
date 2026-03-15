@@ -1,11 +1,11 @@
 'use client';
 
-import { motion } from 'framer-motion';
 import {
   Sprout,
   CalendarPlus,
   FileText,
   UserPlus,
+  ArrowRight,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -16,10 +16,9 @@ import { cn } from '@/lib/utils';
 
 interface QuickAction {
   label: string;
+  description: string;
   icon: LucideIcon;
   href: string;
-  color: string;
-  bg: string;
 }
 
 interface QuickActionsProps {
@@ -33,32 +32,28 @@ interface QuickActionsProps {
 
 const DEFAULT_ACTIONS: QuickAction[] = [
   {
-    label: 'Add Plant',
+    label: 'Add plant',
+    description: 'Register new inventory',
     icon: Sprout,
     href: '/admin/plants/new',
-    color: 'text-emerald-600 dark:text-emerald-400',
-    bg: 'bg-emerald-500/10 group-hover:bg-emerald-500/20',
   },
   {
-    label: 'Schedule Visit',
+    label: 'Schedule visit',
+    description: 'Book maintenance',
     icon: CalendarPlus,
     href: '/admin/maintenance/new',
-    color: 'text-sky-600 dark:text-sky-400',
-    bg: 'bg-sky-500/10 group-hover:bg-sky-500/20',
   },
   {
-    label: 'Create Invoice',
+    label: 'Create invoice',
+    description: 'Bill a client',
     icon: FileText,
     href: '/admin/invoices/new',
-    color: 'text-violet-600 dark:text-violet-400',
-    bg: 'bg-violet-500/10 group-hover:bg-violet-500/20',
   },
   {
-    label: 'Add Client',
+    label: 'Add client',
+    description: 'Onboard new client',
     icon: UserPlus,
     href: '/admin/clients/new',
-    color: 'text-amber-600 dark:text-amber-400',
-    bg: 'bg-amber-500/10 group-hover:bg-amber-500/20',
   },
 ];
 
@@ -68,37 +63,32 @@ const DEFAULT_ACTIONS: QuickAction[] = [
 
 export function QuickActions({ actions = DEFAULT_ACTIONS, onAction }: QuickActionsProps) {
   return (
-    <div className="rounded-2xl border border-gray-200/60 bg-white/80 p-5 backdrop-blur-xl dark:border-white/5 dark:bg-gray-900/50">
-      <h3 className="mb-4 text-sm font-semibold text-gray-900 dark:text-white">
-        Quick Actions
+    <div className="rounded-xl border border-gray-200 bg-white p-5">
+      <h3 className="mb-4 text-sm font-semibold text-gray-900">
+        Quick actions
       </h3>
-      <div className="grid grid-cols-2 gap-3">
-        {actions.map((action, index) => {
+      <div className="flex flex-col gap-1.5">
+        {actions.map((action) => {
           const Icon = action.icon;
-
           return (
-            <motion.button
+            <button
               key={action.label}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: index * 0.05, duration: 0.3 }}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
               onClick={() => onAction?.(action.href)}
-              className="group flex flex-col items-center gap-2.5 rounded-xl border border-gray-100/80 bg-gray-50/50 p-4 transition-all duration-200 hover:border-gray-200 hover:shadow-sm dark:border-white/5 dark:bg-white/[0.02] dark:hover:border-white/10"
+              className={cn(
+                'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-left',
+                'transition-colors duration-150',
+                'hover:bg-gray-50',
+              )}
             >
-              <div
-                className={cn(
-                  'flex h-10 w-10 items-center justify-center rounded-xl transition-colors duration-200',
-                  action.bg
-                )}
-              >
-                <Icon className={cn('h-5 w-5', action.color)} />
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gray-100 transition-colors group-hover:bg-gray-200">
+                <Icon className="h-4 w-4 text-gray-600" />
               </div>
-              <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
-                {action.label}
-              </span>
-            </motion.button>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900">{action.label}</p>
+                <p className="text-xs text-gray-400">{action.description}</p>
+              </div>
+              <ArrowRight className="h-3.5 w-3.5 text-gray-300 opacity-0 transition-opacity group-hover:opacity-100" />
+            </button>
           );
         })}
       </div>

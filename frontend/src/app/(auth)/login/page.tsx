@@ -2,63 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
-import {
-  Leaf,
-  Mail,
-  Lock,
-  Eye,
-  EyeOff,
-  ArrowRight,
-  Sprout,
-  TreePine,
-  Wind,
-} from 'lucide-react';
+import { Leaf, Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-/* -------------------------------------------------------------------------- */
-/*  Decorative floating elements for left panel                               */
-/* -------------------------------------------------------------------------- */
-
-function FloatingElements() {
-  return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden">
-      {/* Floating icons */}
-      <motion.div
-        animate={{ y: [0, -20, 0] }}
-        transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-        className="absolute left-[15%] top-[20%]"
-      >
-        <Sprout className="h-8 w-8 text-emerald-400/30" />
-      </motion.div>
-      <motion.div
-        animate={{ y: [0, -15, 0] }}
-        transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
-        className="absolute right-[20%] top-[35%]"
-      >
-        <TreePine className="h-10 w-10 text-green-400/20" />
-      </motion.div>
-      <motion.div
-        animate={{ y: [0, -25, 0] }}
-        transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
-        className="absolute left-[25%] bottom-[25%]"
-      >
-        <Wind className="h-7 w-7 text-emerald-300/25" />
-      </motion.div>
-      <motion.div
-        animate={{ y: [0, -18, 0] }}
-        transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
-        className="absolute right-[15%] bottom-[35%]"
-      >
-        <Leaf className="h-6 w-6 text-green-300/30" />
-      </motion.div>
-
-      {/* Gradient orbs */}
-      <div className="absolute -left-20 top-1/4 h-64 w-64 rounded-full bg-emerald-500/10 blur-[100px]" />
-      <div className="absolute -right-20 bottom-1/4 h-48 w-48 rounded-full bg-green-500/10 blur-[80px]" />
-    </div>
-  );
-}
 
 /* -------------------------------------------------------------------------- */
 /*  Google icon SVG                                                           */
@@ -99,203 +44,213 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen">
-      {/* ---- Left panel: Branding ---- */}
-      <div className="relative hidden w-1/2 items-center justify-center overflow-hidden bg-gradient-to-br from-forest-900 via-emerald-900 to-forest-950 lg:flex">
-        <FloatingElements />
-
-        <div className="relative z-10 max-w-md px-12 text-center">
-          {/* Logo */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="mx-auto mb-8 flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-emerald-400 to-green-600 shadow-2xl shadow-emerald-500/30"
-          >
-            <Leaf className="h-10 w-10 text-white" />
-          </motion.div>
-
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="bg-gradient-to-r from-emerald-200 via-green-200 to-teal-200 bg-clip-text text-4xl font-bold tracking-tight text-transparent"
-          >
+      {/* ------------------------------------------------------------------ */}
+      {/*  Left panel — Branding                                             */}
+      {/* ------------------------------------------------------------------ */}
+      <div className="relative hidden w-1/2 flex-col justify-between bg-gray-50 p-12 lg:flex">
+        {/* Logo */}
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600">
+            <Leaf className="h-4 w-4 text-white" />
+          </div>
+          <span className="text-[15px] font-semibold tracking-tight text-gray-900">
             VRIKSHAM
-          </motion.h1>
+          </span>
+        </div>
 
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="mt-4 text-lg text-emerald-200/70"
-          >
-            Green Infrastructure Management Platform
-          </motion.p>
+        {/* Hero content */}
+        <div className="max-w-lg">
+          <h1 className="text-[40px] font-semibold leading-[1.1] tracking-tight text-gray-900">
+            Green infrastructure,
+            <br />
+            managed intelligently.
+          </h1>
+          <p className="mt-5 text-[15px] leading-relaxed text-gray-500">
+            Monitor plant health, automate maintenance workflows, and generate
+            ESG-ready sustainability reports — all from a single platform.
+          </p>
+        </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-            className="mt-8 rounded-2xl border border-emerald-500/10 bg-emerald-500/5 p-6 backdrop-blur-sm"
-          >
-            <p className="text-sm leading-relaxed text-emerald-200/60">
-              &ldquo;Vriksham has transformed how we manage our office plants. The ESG
-              tracking alone has been invaluable for our sustainability reports.&rdquo;
+        {/* Testimonial */}
+        <div className="max-w-md">
+          <div className="border-l-2 border-gray-200 pl-5">
+            <p className="text-sm leading-relaxed text-gray-500">
+              &ldquo;Vriksham transformed how we manage our office greenery.
+              The ESG tracking alone saved us 40+ hours per quarter on
+              sustainability reports.&rdquo;
             </p>
-            <div className="mt-4 flex items-center justify-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/20 text-xs font-bold text-emerald-300">
+            <div className="mt-4 flex items-center gap-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 text-xs font-medium text-gray-600">
                 RM
               </div>
-              <div className="text-left">
-                <p className="text-xs font-medium text-emerald-200">Rahul Mehta</p>
-                <p className="text-[11px] text-emerald-400/60">CTO, TechCorp Ltd</p>
+              <div>
+                <p className="text-sm font-medium text-gray-900">Rahul Mehta</p>
+                <p className="text-xs text-gray-400">CTO, TechCorp Ltd</p>
               </div>
             </div>
-          </motion.div>
+          </div>
         </div>
       </div>
 
-      {/* ---- Right panel: Login form ---- */}
-      <div className="flex w-full items-center justify-center px-6 lg:w-1/2">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="w-full max-w-md"
-        >
-          {/* Mobile logo */}
-          <div className="mb-8 text-center lg:hidden">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-green-600 shadow-lg shadow-emerald-500/30">
-              <Leaf className="h-7 w-7 text-white" />
-            </div>
-            <h1 className="text-2xl font-bold text-white">VRIKSHAM</h1>
+      {/* ------------------------------------------------------------------ */}
+      {/*  Right panel — Login form                                          */}
+      {/* ------------------------------------------------------------------ */}
+      <div className="flex w-full flex-col lg:w-1/2">
+        {/* Mobile logo */}
+        <div className="flex items-center gap-2.5 p-6 lg:hidden">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600">
+            <Leaf className="h-4 w-4 text-white" />
           </div>
+          <span className="text-[15px] font-semibold tracking-tight text-gray-900">
+            VRIKSHAM
+          </span>
+        </div>
 
-          {/* Form card */}
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-2xl">
+        {/* Desktop top-right logo */}
+        <div className="hidden justify-end p-8 lg:flex">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600">
+              <Leaf className="h-4 w-4 text-white" />
+            </div>
+          </div>
+        </div>
+
+        {/* Centered form */}
+        <div className="flex flex-1 items-center justify-center px-6 pb-12 sm:px-12">
+          <div className="w-full max-w-[400px]">
+            {/* Heading */}
             <div className="mb-8">
-              <h2 className="text-2xl font-bold text-white">Welcome back</h2>
-              <p className="mt-1.5 text-sm text-gray-400">
-                Sign in to your account to continue
+              <h2 className="text-2xl font-semibold tracking-tight text-gray-900">
+                Sign in to your account
+              </h2>
+              <p className="mt-2 text-sm text-gray-500">
+                Don&apos;t have an account?{' '}
+                <Link
+                  href="/register"
+                  className="font-medium text-emerald-600 hover:text-emerald-700"
+                >
+                  Sign up
+                </Link>
               </p>
             </div>
 
             <form onSubmit={(e) => e.preventDefault()} className="space-y-5">
               {/* Email */}
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-gray-300">
+                <label className="mb-1.5 block text-sm font-medium text-gray-700">
                   Email address
                 </label>
                 <div className="relative">
-                  <Mail className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+                  <Mail className="absolute left-3 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-gray-400" />
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@company.com"
-                    className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-11 pr-4 text-sm text-white placeholder:text-gray-500 focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                    className="w-full rounded-lg border border-gray-200 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-100"
                   />
                 </div>
               </div>
 
               {/* Password */}
               <div>
-                <div className="mb-1.5 flex items-center justify-between">
-                  <label className="text-sm font-medium text-gray-300">
-                    Password
-                  </label>
-                  <Link
-                    href="/forgot-password"
-                    className="text-xs font-medium text-emerald-400 transition-colors hover:text-emerald-300"
-                  >
-                    Forgot password?
-                  </Link>
-                </div>
+                <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                  Password
+                </label>
                 <div className="relative">
-                  <Lock className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+                  <Lock className="absolute left-3 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-gray-400" />
                   <input
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter your password"
-                    className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-11 pr-12 text-sm text-white placeholder:text-gray-500 focus:border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                    className="w-full rounded-lg border border-gray-200 bg-white py-2.5 pl-10 pr-11 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-100"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-500 transition-colors hover:text-gray-300"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   >
                     {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
+                      <EyeOff className="h-[18px] w-[18px]" />
                     ) : (
-                      <Eye className="h-4 w-4" />
+                      <Eye className="h-[18px] w-[18px]" />
                     )}
                   </button>
                 </div>
               </div>
 
-              {/* Remember me */}
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setRememberMe(!rememberMe)}
-                  className={cn(
-                    'flex h-4 w-4 items-center justify-center rounded border transition-colors',
-                    rememberMe
-                      ? 'border-emerald-500 bg-emerald-500'
-                      : 'border-white/20 bg-transparent'
-                  )}
+              {/* Remember me + Forgot password */}
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <button
+                    type="button"
+                    onClick={() => setRememberMe(!rememberMe)}
+                    className={cn(
+                      'flex h-4 w-4 items-center justify-center rounded border transition-colors',
+                      rememberMe
+                        ? 'border-gray-900 bg-gray-900'
+                        : 'border-gray-300 bg-white'
+                    )}
+                  >
+                    {rememberMe && (
+                      <svg
+                        className="h-3 w-3 text-white"
+                        viewBox="0 0 12 12"
+                        fill="none"
+                      >
+                        <path
+                          d="M2 6l3 3 5-5"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    )}
+                  </button>
+                  <span className="text-sm text-gray-600">Remember me</span>
+                </label>
+                <Link
+                  href="/forgot-password"
+                  className="text-sm font-medium text-gray-600 hover:text-gray-900"
                 >
-                  {rememberMe && (
-                    <svg className="h-3 w-3 text-white" viewBox="0 0 12 12" fill="none">
-                      <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  )}
-                </button>
-                <span className="text-sm text-gray-400">Remember me</span>
+                  Forgot password?
+                </Link>
               </div>
 
               {/* Submit */}
-              <motion.button
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.99 }}
+              <button
                 type="submit"
-                className="group flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 transition-shadow hover:shadow-emerald-500/40"
+                className="group flex w-full items-center justify-center gap-2 rounded-lg bg-gray-900 py-2.5 text-sm font-medium text-white transition-colors hover:bg-gray-800"
               >
                 Sign in
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-              </motion.button>
+              </button>
             </form>
 
             {/* Divider */}
             <div className="my-6 flex items-center gap-3">
-              <div className="h-px flex-1 bg-white/10" />
-              <span className="text-xs text-gray-500">or continue with</span>
-              <div className="h-px flex-1 bg-white/10" />
+              <div className="h-px flex-1 bg-gray-200" />
+              <span className="text-xs text-gray-400">Or continue with</span>
+              <div className="h-px flex-1 bg-gray-200" />
             </div>
 
             {/* OAuth */}
-            <motion.button
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.99 }}
-              className="flex w-full items-center justify-center gap-3 rounded-xl border border-white/10 bg-white/5 py-3 text-sm font-medium text-white transition-colors hover:bg-white/10"
-            >
+            <button type="button" className="flex w-full items-center justify-center gap-3 rounded-lg border border-gray-200 bg-white py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50">
               <GoogleIcon />
               Sign in with Google
-            </motion.button>
+            </button>
 
-            {/* Sign up link */}
-            <p className="mt-6 text-center text-sm text-gray-400">
-              Don&apos;t have an account?{' '}
-              <Link
-                href="/register"
-                className="font-medium text-emerald-400 transition-colors hover:text-emerald-300"
-              >
-                Sign up
-              </Link>
-            </p>
+            {/* Demo hint */}
+            <div className="mt-8 rounded-lg border border-dashed border-gray-200 bg-gray-50 px-4 py-3">
+              <p className="text-center text-xs text-gray-400">
+                Demo: <span className="font-medium text-gray-500">user@vriksham.org</span>{' '}
+                / <span className="font-medium text-gray-500">User@123</span>
+              </p>
+            </div>
           </div>
-        </motion.div>
+        </div>
       </div>
     </div>
   );

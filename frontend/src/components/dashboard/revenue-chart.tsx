@@ -93,8 +93,8 @@ function CustomTooltip({
   if (!active || !payload || payload.length === 0) return null;
 
   return (
-    <div className="rounded-xl border border-gray-200/60 bg-white/90 px-4 py-3 shadow-elevated backdrop-blur-xl dark:border-white/10 dark:bg-gray-900/90">
-      <p className="mb-1.5 text-xs font-medium text-gray-500 dark:text-gray-400">
+    <div className="rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm">
+      <p className="mb-1.5 text-xs font-medium text-gray-500">
         {label}
       </p>
       {payload.map((entry) => (
@@ -103,11 +103,11 @@ function CustomTooltip({
             className="h-2.5 w-2.5 rounded-full"
             style={{ backgroundColor: entry.color }}
           />
-          <span className="text-xs text-gray-500 dark:text-gray-400 capitalize">
+          <span className="text-xs text-gray-500 capitalize">
             {entry.name}:
           </span>
-          <span className="text-sm font-semibold text-gray-900 dark:text-white">
-            ${(entry.value / 1000).toFixed(0)}k
+          <span className="text-sm font-semibold text-gray-900">
+            ₹{(entry.value / 1000).toFixed(0)}k
           </span>
         </div>
       ))}
@@ -136,22 +136,22 @@ export function RevenueChart({ data }: RevenueChartProps) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="rounded-2xl border border-gray-200/60 bg-white/80 p-5 backdrop-blur-xl dark:border-white/5 dark:bg-gray-900/50"
+      className="rounded-xl border border-gray-200 bg-white p-5"
     >
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+          <h3 className="text-sm font-semibold text-gray-900">
             Revenue Overview
           </h3>
-          <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-            Track your revenue and expenses
+          <p className="mt-0.5 text-xs text-gray-500">
+            Revenue vs expenses over time
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           {/* View mode toggle */}
-          <div className="flex rounded-lg border border-gray-200/80 bg-gray-50/80 p-0.5 dark:border-white/10 dark:bg-white/5">
+          <div className="flex rounded-lg border border-gray-200 bg-gray-50 p-0.5">
             {viewModes.map((mode) => (
               <button
                 key={mode.key}
@@ -159,8 +159,8 @@ export function RevenueChart({ data }: RevenueChartProps) {
                 className={cn(
                   'rounded-md px-2.5 py-1 text-xs font-medium transition-all duration-200',
                   viewMode === mode.key
-                    ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-800 dark:text-white'
-                    : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
                 )}
               >
                 {mode.label}
@@ -169,14 +169,14 @@ export function RevenueChart({ data }: RevenueChartProps) {
           </div>
 
           {/* Chart type toggle */}
-          <div className="flex rounded-lg border border-gray-200/80 bg-gray-50/80 p-0.5 dark:border-white/10 dark:bg-white/5">
+          <div className="flex rounded-lg border border-gray-200 bg-gray-50 p-0.5">
             <button
               onClick={() => setChartType('line')}
               className={cn(
                 'rounded-md px-2.5 py-1 text-xs font-medium transition-all duration-200',
                 chartType === 'line'
-                  ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-800 dark:text-white'
-                  : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
               )}
             >
               Line
@@ -186,8 +186,8 @@ export function RevenueChart({ data }: RevenueChartProps) {
               className={cn(
                 'rounded-md px-2.5 py-1 text-xs font-medium transition-all duration-200',
                 chartType === 'bar'
-                  ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-800 dark:text-white'
-                  : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
               )}
             >
               Bar
@@ -222,7 +222,7 @@ export function RevenueChart({ data }: RevenueChartProps) {
                 axisLine={false}
                 tickLine={false}
                 tick={{ fontSize: 12, fill: '#9ca3af' }}
-                tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
+                tickFormatter={(v: number) => `₹${(v / 1000).toFixed(0)}k`}
               />
               <Tooltip content={<CustomTooltip />} />
               <Area
@@ -256,7 +256,7 @@ export function RevenueChart({ data }: RevenueChartProps) {
                 axisLine={false}
                 tickLine={false}
                 tick={{ fontSize: 12, fill: '#9ca3af' }}
-                tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
+                tickFormatter={(v: number) => `₹${(v / 1000).toFixed(0)}k`}
               />
               <Tooltip content={<CustomTooltip />} />
               <Bar
@@ -281,11 +281,11 @@ export function RevenueChart({ data }: RevenueChartProps) {
       <div className="mt-4 flex items-center gap-6">
         <div className="flex items-center gap-2">
           <div className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-          <span className="text-xs text-gray-500 dark:text-gray-400">Revenue</span>
+          <span className="text-xs text-gray-500">Revenue</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="h-2.5 w-2.5 rounded-full bg-violet-500" />
-          <span className="text-xs text-gray-500 dark:text-gray-400">Expenses</span>
+          <span className="text-xs text-gray-500">Expenses</span>
         </div>
       </div>
     </motion.div>

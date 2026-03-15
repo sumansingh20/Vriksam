@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Calendar, MapPin, User, ArrowUpDown } from 'lucide-react';
+import { Calendar, MapPin, ArrowUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 /* -------------------------------------------------------------------------- */
@@ -31,24 +30,24 @@ interface MaintenanceCalendarProps {
 const STATUS_STYLES: Record<MaintenanceStatus, { label: string; className: string }> = {
   scheduled: {
     label: 'Scheduled',
-    className: 'bg-sky-500/10 text-sky-700 dark:text-sky-400',
+    className: 'bg-sky-50 text-sky-700',
   },
   in_progress: {
     label: 'In Progress',
-    className: 'bg-amber-500/10 text-amber-700 dark:text-amber-400',
+    className: 'bg-amber-50 text-amber-700',
   },
   completed: {
     label: 'Completed',
-    className: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
+    className: 'bg-emerald-50 text-emerald-700',
   },
   overdue: {
     label: 'Overdue',
-    className: 'bg-red-500/10 text-red-700 dark:text-red-400',
+    className: 'bg-red-50 text-red-700',
   },
 };
 
 /* -------------------------------------------------------------------------- */
-/*  Default mock data                                                         */
+/*  Default data                                                              */
 /* -------------------------------------------------------------------------- */
 
 const DEFAULT_VISITS: MaintenanceVisit[] = [
@@ -88,35 +87,29 @@ export function MaintenanceCalendar({ visits = DEFAULT_VISITS }: MaintenanceCale
   });
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="rounded-2xl border border-gray-200/60 bg-white/80 backdrop-blur-xl dark:border-white/5 dark:bg-gray-900/50"
-    >
-      <div className="border-b border-gray-200/60 px-5 py-4 dark:border-white/5">
-        <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
-          Upcoming Maintenance
+    <div className="rounded-xl border border-gray-200 bg-white">
+      <div className="border-b border-gray-100 px-5 py-4">
+        <h3 className="text-sm font-semibold text-gray-900">
+          Upcoming maintenance
         </h3>
-        <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+        <p className="mt-0.5 text-xs text-gray-500">
           Scheduled service visits
         </p>
       </div>
 
-      {/* Table */}
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-gray-100/80 dark:border-white/5">
+            <tr className="border-b border-gray-100">
               {([
-                { field: 'date' as const, label: 'Date', icon: Calendar },
-                { field: 'clientName' as const, label: 'Client', icon: User },
-                { field: 'technician' as const, label: 'Technician', icon: User },
-                { field: 'status' as const, label: 'Status', icon: ArrowUpDown },
+                { field: 'date' as const, label: 'Date' },
+                { field: 'clientName' as const, label: 'Client' },
+                { field: 'technician' as const, label: 'Technician' },
+                { field: 'status' as const, label: 'Status' },
               ]).map(({ field, label }) => (
                 <th
                   key={field}
-                  className="cursor-pointer px-5 py-3 text-left text-xs font-medium text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                  className="cursor-pointer px-5 py-3 text-left text-xs font-medium text-gray-500 transition-colors hover:text-gray-700"
                   onClick={() => handleSort(field)}
                 >
                   <div className="flex items-center gap-1">
@@ -125,24 +118,24 @@ export function MaintenanceCalendar({ visits = DEFAULT_VISITS }: MaintenanceCale
                   </div>
                 </th>
               ))}
-              <th className="px-5 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
+              <th className="px-5 py-3 text-left text-xs font-medium text-gray-500">
                 Location
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100/80 dark:divide-white/5">
+          <tbody className="divide-y divide-gray-100">
             {sorted.map((visit) => {
               const status = STATUS_STYLES[visit.status];
 
               return (
                 <tr
                   key={visit.id}
-                  className="transition-colors hover:bg-gray-50/80 dark:hover:bg-white/[0.02]"
+                  className="transition-colors hover:bg-gray-50"
                 >
                   <td className="whitespace-nowrap px-5 py-3">
                     <div className="flex items-center gap-2">
                       <Calendar className="h-3.5 w-3.5 text-gray-400" />
-                      <span className="font-medium text-gray-700 dark:text-gray-300">
+                      <span className="font-medium text-gray-700">
                         {new Date(visit.date).toLocaleDateString('en-IN', {
                           day: 'numeric',
                           month: 'short',
@@ -150,10 +143,10 @@ export function MaintenanceCalendar({ visits = DEFAULT_VISITS }: MaintenanceCale
                       </span>
                     </div>
                   </td>
-                  <td className="whitespace-nowrap px-5 py-3 font-medium text-gray-900 dark:text-white">
+                  <td className="whitespace-nowrap px-5 py-3 font-medium text-gray-900">
                     {visit.clientName}
                   </td>
-                  <td className="whitespace-nowrap px-5 py-3 text-gray-600 dark:text-gray-400">
+                  <td className="whitespace-nowrap px-5 py-3 text-gray-600">
                     {visit.technician}
                   </td>
                   <td className="whitespace-nowrap px-5 py-3">
@@ -167,7 +160,7 @@ export function MaintenanceCalendar({ visits = DEFAULT_VISITS }: MaintenanceCale
                     </span>
                   </td>
                   <td className="whitespace-nowrap px-5 py-3">
-                    <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
+                    <div className="flex items-center gap-1.5 text-gray-500">
                       <MapPin className="h-3.5 w-3.5" />
                       <span className="text-xs">{visit.location}</span>
                     </div>
@@ -178,7 +171,7 @@ export function MaintenanceCalendar({ visits = DEFAULT_VISITS }: MaintenanceCale
           </tbody>
         </table>
       </div>
-    </motion.div>
+    </div>
   );
 }
 

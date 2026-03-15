@@ -191,17 +191,16 @@ export function Sidebar({
       animate={{ width: collapsed ? 72 : 260 }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
       className={cn(
-        "fixed top-0 left-0 z-30 flex h-screen flex-col border-r border-white/10",
-        "bg-white/70 backdrop-blur-2xl dark:bg-gray-950/70",
-        "shadow-[1px_0_40px_rgba(0,0,0,0.03)]"
+        "fixed top-0 left-0 z-30 flex h-screen flex-col border-r border-gray-200",
+        "bg-white"
       )}
     >
       {/* Logo */}
-      <div className="flex h-16 shrink-0 items-center border-b border-gray-100 px-4 dark:border-white/5">
+      <div className="flex h-16 shrink-0 items-center border-b border-gray-200 px-4">
         <Link href="/" className="flex items-center gap-2.5 overflow-hidden">
           <div className="relative flex h-9 w-9 shrink-0 items-center justify-center">
-            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-emerald-400 to-green-600 opacity-20" />
-            <Leaf className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+            <div className="absolute inset-0 rounded-xl bg-gray-900" />
+            <Leaf className="h-5 w-5 relative z-10 text-white" />
           </div>
           <AnimatePresence>
             {!collapsed && (
@@ -210,7 +209,7 @@ export function Sidebar({
                 animate={{ opacity: 1, width: "auto" }}
                 exit={{ opacity: 0, width: 0 }}
                 transition={{ duration: 0.2 }}
-                className="overflow-hidden whitespace-nowrap bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 bg-clip-text text-lg font-bold tracking-tight text-transparent"
+                className="overflow-hidden whitespace-nowrap text-lg font-bold tracking-tight text-gray-900"
               >
                 VRIKSHAM
               </motion.span>
@@ -231,7 +230,7 @@ export function Sidebar({
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.15 }}
-                    className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500"
+                    className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400"
                   >
                     {group.title}
                   </motion.h3>
@@ -250,8 +249,8 @@ export function Sidebar({
                           "group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors duration-150",
                           collapsed && "justify-center px-0",
                           isActive
-                            ? "text-emerald-700 dark:text-emerald-400"
-                            : "text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+                            ? "text-gray-900"
+                            : "text-gray-600 hover:text-gray-900"
                         )}
                         whileTap={{ scale: 0.98 }}
                       >
@@ -259,7 +258,7 @@ export function Sidebar({
                         {isActive && (
                           <motion.div
                             layoutId={`sidebar-active-${role}`}
-                            className="absolute inset-0 rounded-xl bg-emerald-50 dark:bg-emerald-500/10"
+                            className="absolute inset-0 rounded-xl bg-gray-100"
                             transition={{
                               type: "spring",
                               stiffness: 350,
@@ -272,7 +271,7 @@ export function Sidebar({
                         {isActive && (
                           <motion.div
                             layoutId={`sidebar-indicator-${role}`}
-                            className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-full bg-gradient-to-b from-emerald-400 to-green-500"
+                            className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-full bg-gray-900"
                             transition={{
                               type: "spring",
                               stiffness: 350,
@@ -285,8 +284,8 @@ export function Sidebar({
                           className={cn(
                             "relative z-10 h-[18px] w-[18px] shrink-0 transition-colors",
                             isActive
-                              ? "text-emerald-600 dark:text-emerald-400"
-                              : "text-gray-400 group-hover:text-gray-600 dark:text-gray-500 dark:group-hover:text-gray-300"
+                              ? "text-gray-900"
+                              : "text-gray-400 group-hover:text-gray-600"
                           )}
                         />
 
@@ -322,13 +321,13 @@ export function Sidebar({
       </nav>
 
       {/* Collapse Toggle */}
-      <div className="border-t border-gray-100 px-3 py-2 dark:border-white/5">
+      <div className="border-t border-gray-200 px-3 py-2">
         <motion.button
           onClick={() => onCollapsedChange?.(!collapsed)}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           className={cn(
-            "flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm text-gray-400 transition-colors hover:bg-gray-50 hover:text-gray-600 dark:hover:bg-white/5 dark:hover:text-gray-300",
+            "flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm text-gray-400 transition-colors hover:bg-gray-50 hover:text-gray-600",
             collapsed && "justify-center px-0"
           )}
         >
@@ -352,7 +351,7 @@ export function Sidebar({
       </div>
 
       {/* User Section */}
-      <div className="border-t border-gray-100 px-3 py-3 dark:border-white/5">
+      <div className="border-t border-gray-200 px-3 py-3">
         <div
           className={cn(
             "flex items-center gap-3 rounded-xl px-3 py-2",
@@ -368,7 +367,7 @@ export function Sidebar({
                 className="h-8 w-8 rounded-lg object-cover"
               />
             ) : (
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-400 to-green-600 text-xs font-bold text-white">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-900 text-xs font-bold text-white">
                 {userName
                   .split(" ")
                   .map((n) => n[0])
@@ -377,7 +376,7 @@ export function Sidebar({
                   .slice(0, 2)}
               </div>
             )}
-            <div className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-emerald-400 dark:border-gray-950" />
+            <div className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-green-500" />
           </div>
 
           <AnimatePresence>
@@ -389,7 +388,7 @@ export function Sidebar({
                 transition={{ duration: 0.15 }}
                 className="flex-1 overflow-hidden"
               >
-                <p className="truncate text-sm font-medium text-gray-900 dark:text-white">
+                <p className="truncate text-sm font-medium text-gray-900">
                   {userName}
                 </p>
                 <p className="truncate text-xs text-gray-500">{userEmail}</p>
@@ -404,7 +403,7 @@ export function Sidebar({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.15 }}
-                className="shrink-0 rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-white/5 dark:hover:text-gray-300"
+                className="shrink-0 rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
                 aria-label="Sign out"
               >
                 <LogOut className="h-4 w-4" />

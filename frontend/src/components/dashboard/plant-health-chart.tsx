@@ -59,17 +59,17 @@ function CustomTooltip({
   if (!item) return null;
 
   return (
-    <div className="rounded-xl border border-gray-200/60 bg-white/90 px-3 py-2 shadow-elevated backdrop-blur-xl dark:border-white/10 dark:bg-gray-900/90">
+    <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-sm">
       <div className="flex items-center gap-2">
         <div
           className="h-3 w-3 rounded-full"
           style={{ backgroundColor: item.payload.color }}
         />
-        <span className="text-sm font-medium text-gray-900 dark:text-white">
+        <span className="text-sm font-medium text-gray-900">
           {item.name}
         </span>
       </div>
-      <p className="mt-1 text-lg font-bold text-gray-900 dark:text-white">
+      <p className="mt-1 text-lg font-bold text-gray-900">
         {item.value} plants
       </p>
     </div>
@@ -89,10 +89,10 @@ function CustomLegend({ data, total }: { data: PlantHealthData[]; total: number 
             className="h-2.5 w-2.5 rounded-full"
             style={{ backgroundColor: entry.color }}
           />
-          <span className="text-xs text-gray-500 dark:text-gray-400">
+          <span className="text-xs text-gray-500">
             {entry.name}
           </span>
-          <span className="ml-auto text-xs font-semibold text-gray-700 dark:text-gray-300">
+          <span className="ml-auto text-xs font-semibold text-gray-700">
             {total > 0 ? ((entry.value / total) * 100).toFixed(0) : 0}%
           </span>
         </div>
@@ -114,9 +114,9 @@ export function PlantHealthChart({ data = DEFAULT_DATA }: PlantHealthChartProps)
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="rounded-2xl border border-gray-200/60 bg-white/80 p-5 backdrop-blur-xl dark:border-white/5 dark:bg-gray-900/50"
+      className="rounded-xl border border-gray-200 bg-white p-5"
     >
-      <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+      <h3 className="text-sm font-semibold text-gray-900">
         Plant Health Distribution
       </h3>
 
@@ -154,10 +154,10 @@ export function PlantHealthChart({ data = DEFAULT_DATA }: PlantHealthChartProps)
         {/* Center label */}
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
           <div className="text-center">
-            <p className="text-3xl font-bold text-gray-900 dark:text-white">
+            <p className="text-3xl font-bold text-gray-900">
               {total}
             </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
+            <p className="text-xs text-gray-500">
               Total Plants
             </p>
           </div>

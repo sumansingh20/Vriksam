@@ -3,14 +3,7 @@
 import { useState, useRef } from 'react';
 import Link from 'next/link';
 import { motion, useInView, AnimatePresence } from 'framer-motion';
-import {
-  Check,
-  X,
-  ChevronDown,
-  ArrowRight,
-  Phone,
-  HelpCircle,
-} from 'lucide-react';
+import { Check, X, ChevronDown, ArrowRight, Phone } from 'lucide-react';
 import { PricingSection } from '@/components/marketing/pricing-section';
 import { cn } from '@/lib/utils';
 
@@ -29,24 +22,24 @@ const billingFaqs = [
   },
   {
     question: 'Is there a free trial available?',
-    answer: 'Absolutely! All plans include a 14-day free trial with full access to all features. No credit card required to start. You can cancel anytime during the trial with zero charges.',
+    answer: 'All plans include a 14-day free trial with full access. No credit card required. Cancel anytime during the trial with zero charges.',
   },
   {
     question: 'How does annual billing work?',
-    answer: 'Annual billing gives you a 20% discount compared to monthly pricing. You are billed once per year and receive a single invoice. You can switch to monthly billing when your annual term ends.',
+    answer: 'Annual billing gives you a 20% discount compared to monthly pricing. You are billed once per year. You can switch to monthly billing when your annual term ends.',
   },
   {
     question: 'What is included in the Enterprise plan?',
-    answer: 'The Enterprise plan includes unlimited plants, advanced AI analytics, daily maintenance visits, a dedicated account manager, custom ESG reporting, full API access, SLA guarantees, and priority onboarding support.',
+    answer: 'Unlimited plants, advanced AI analytics, daily maintenance, a dedicated account manager, custom ESG reporting, full API access, SLA guarantees, and priority onboarding support.',
   },
   {
     question: 'Do you offer refunds?',
-    answer: 'We offer a 30-day money-back guarantee for all new subscriptions. If you are not satisfied within the first 30 days, contact us for a full refund. After 30 days, refunds are prorated based on usage.',
+    answer: 'We offer a 30-day money-back guarantee for all new subscriptions. After 30 days, refunds are prorated based on usage.',
   },
 ];
 
 /* -------------------------------------------------------------------------- */
-/*  Comparison Features Matrix                                                 */
+/*  Comparison Matrix                                                          */
 /* -------------------------------------------------------------------------- */
 
 interface FeatureRow {
@@ -67,7 +60,7 @@ const comparisonFeatures: FeatureRow[] = [
   { feature: 'Support', starter: 'Email', professional: 'Priority', enterprise: '24/7 Phone' },
   { feature: 'Locations', starter: '1', professional: 'Up to 5', enterprise: 'Unlimited' },
   { feature: 'Technician Visits', starter: '1/month', professional: '4/month', enterprise: 'Daily' },
-  { feature: 'Plant Replacement Guarantee', starter: false, professional: true, enterprise: true },
+  { feature: 'Plant Replacement', starter: false, professional: true, enterprise: true },
   { feature: 'Custom Integrations', starter: false, professional: false, enterprise: true },
 ];
 
@@ -83,16 +76,16 @@ function FAQItem({ question, answer, index }: { question: string; answer: string
   return (
     <motion.div
       ref={ref}
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 16 }}
       animate={isInView ? { opacity: 1, y: 0 } : {}}
-      transition={{ delay: index * 0.08, duration: 0.5 }}
-      className="rounded-2xl border border-gray-200/60 bg-white shadow-sm transition-all duration-200 hover:shadow-md"
+      transition={{ delay: index * 0.06, duration: 0.4 }}
+      className="border-b border-gray-200 last:border-0"
     >
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex w-full items-center justify-between p-5 text-left"
+        className="flex w-full items-center justify-between py-5 text-left"
       >
-        <span className="pr-4 text-sm font-semibold text-gray-900">{question}</span>
+        <span className="pr-4 text-sm font-medium text-gray-900">{question}</span>
         <motion.div
           animate={{ rotate: isOpen ? 180 : 0 }}
           transition={{ duration: 0.2 }}
@@ -107,12 +100,10 @@ function FAQItem({ question, answer, index }: { question: string; answer: string
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: 0.25 }}
             className="overflow-hidden"
           >
-            <div className="border-t border-gray-100 px-5 pb-5 pt-4">
-              <p className="text-sm leading-relaxed text-gray-600">{answer}</p>
-            </div>
+            <p className="pb-5 text-sm leading-relaxed text-gray-500">{answer}</p>
           </motion.div>
         )}
       </AnimatePresence>
@@ -127,12 +118,12 @@ function FAQItem({ question, answer, index }: { question: string; answer: string
 function FeatureCell({ value }: { value: boolean | string }) {
   if (typeof value === 'boolean') {
     return value ? (
-      <Check className="mx-auto h-5 w-5 text-emerald-500" />
+      <Check className="mx-auto h-4 w-4 text-emerald-600" />
     ) : (
-      <X className="mx-auto h-5 w-5 text-gray-300" />
+      <X className="mx-auto h-4 w-4 text-gray-300" />
     );
   }
-  return <span className="text-sm font-medium text-gray-700">{value}</span>;
+  return <span className="text-sm text-gray-700">{value}</span>;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -144,68 +135,66 @@ export default function PricingPage() {
   const isTableInView = useInView(tableRef, { once: true, margin: '-80px' });
 
   return (
-    <div className="relative overflow-hidden">
-      {/* Pricing Section (imported component) */}
+    <div>
+      {/* Pricing cards (shared component) */}
       <PricingSection />
 
-      {/* ================================================================== */}
-      {/*  Comparison Table                                                   */}
-      {/* ================================================================== */}
+      {/* Comparison table */}
       <section className="py-20 sm:py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <motion.div
             ref={tableRef}
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 24 }}
             animate={isTableInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.6 }}
+            transition={{ duration: 0.5 }}
           >
-            <div className="mb-12 text-center">
-              <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-                Compare{' '}
-                <span className="bg-gradient-to-r from-emerald-600 to-green-500 bg-clip-text text-transparent">
-                  plans
-                </span>
+            <div className="mb-10 text-center">
+              <p className="text-sm font-semibold uppercase tracking-widest text-emerald-600">
+                Compare
+              </p>
+              <h2 className="mt-3 text-3xl font-bold tracking-tight text-gray-900">
+                Feature comparison
               </h2>
-              <p className="mt-4 text-gray-600">
-                A detailed look at what each plan includes.
+              <p className="mt-3 text-gray-500">
+                See exactly what each plan includes.
               </p>
             </div>
 
-            <div className="overflow-x-auto rounded-2xl border border-gray-200/60 bg-white shadow-lg">
+            <div className="overflow-x-auto rounded-xl border border-gray-200">
               <table className="w-full min-w-[640px]">
                 <thead>
-                  <tr className="border-b border-gray-100">
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                  <tr className="border-b border-gray-200 bg-gray-50">
+                    <th className="px-6 py-3.5 text-left text-xs font-semibold text-gray-900">
                       Feature
                     </th>
-                    <th className="px-6 py-4 text-center text-sm font-semibold text-gray-900">
+                    <th className="px-6 py-3.5 text-center text-xs font-semibold text-gray-900">
                       Starter
                     </th>
-                    <th className="bg-emerald-50/50 px-6 py-4 text-center text-sm font-semibold text-emerald-700">
+                    <th className="px-6 py-3.5 text-center text-xs font-semibold text-gray-900">
                       Professional
                     </th>
-                    <th className="px-6 py-4 text-center text-sm font-semibold text-gray-900">
+                    <th className="px-6 py-3.5 text-center text-xs font-semibold text-gray-900">
                       Enterprise
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50">
+                <tbody className="divide-y divide-gray-100">
                   {comparisonFeatures.map((row, i) => (
                     <tr
                       key={row.feature}
                       className={cn(
-                        'transition-colors hover:bg-gray-50/50',
-                        i % 2 === 0 && 'bg-gray-50/30',
+                        'transition-colors hover:bg-gray-50',
+                        i % 2 === 0 && 'bg-gray-50/50',
                       )}
                     >
-                      <td className="px-6 py-3.5 text-sm text-gray-700">{row.feature}</td>
-                      <td className="px-6 py-3.5 text-center">
+                      <td className="px-6 py-3 text-sm text-gray-700">{row.feature}</td>
+                      <td className="px-6 py-3 text-center">
                         <FeatureCell value={row.starter} />
                       </td>
-                      <td className="bg-emerald-50/30 px-6 py-3.5 text-center">
+                      <td className="px-6 py-3 text-center">
                         <FeatureCell value={row.professional} />
                       </td>
-                      <td className="px-6 py-3.5 text-center">
+                      <td className="px-6 py-3 text-center">
                         <FeatureCell value={row.enterprise} />
                       </td>
                     </tr>
@@ -217,29 +206,19 @@ export default function PricingPage() {
         </div>
       </section>
 
-      {/* ================================================================== */}
-      {/*  Billing FAQ                                                        */}
-      {/* ================================================================== */}
-      <section className="bg-gradient-to-b from-white via-emerald-50/30 to-white py-20 sm:py-24">
-        <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="mb-12 text-center"
-          >
-            <div className="mx-auto mb-4 inline-flex rounded-xl bg-emerald-500/10 p-3">
-              <HelpCircle className="h-5 w-5 text-emerald-600" />
-            </div>
-            <h2 className="text-3xl font-bold tracking-tight text-gray-900">
-              Billing FAQs
-            </h2>
-            <p className="mt-4 text-gray-600">
-              Common questions about plans, billing, and payments.
+      {/* FAQ */}
+      <section className="bg-gray-50 py-20 sm:py-24">
+        <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">
+          <div className="mb-10 text-center">
+            <p className="text-sm font-semibold uppercase tracking-widest text-emerald-600">
+              FAQ
             </p>
-          </motion.div>
+            <h2 className="mt-3 text-3xl font-bold tracking-tight text-gray-900">
+              Common questions
+            </h2>
+          </div>
 
-          <div className="space-y-3">
+          <div>
             {billingFaqs.map((faq, i) => (
               <FAQItem key={i} question={faq.question} answer={faq.answer} index={i} />
             ))}
@@ -247,48 +226,34 @@ export default function PricingPage() {
         </div>
       </section>
 
-      {/* ================================================================== */}
-      {/*  Enterprise CTA                                                     */}
-      {/* ================================================================== */}
+      {/* Enterprise CTA */}
       <section className="py-20 sm:py-24">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 px-8 py-16 text-center shadow-2xl shadow-emerald-500/20 sm:px-16"
-          >
-            <div className="pointer-events-none absolute inset-0">
-              <div className="absolute -left-20 -top-20 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
-              <div className="absolute -bottom-20 -right-20 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
+        <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+          <div className="rounded-2xl bg-gray-900 px-8 py-14 text-center sm:px-16">
+            <h2 className="text-2xl font-bold text-white sm:text-3xl">
+              Need a custom plan?
+            </h2>
+            <p className="mx-auto mt-4 max-w-lg text-base text-gray-400">
+              For large organizations with unique requirements, we create
+              tailored solutions around your green infrastructure goals.
+            </p>
+            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <Link
+                href="/contact"
+                className="group inline-flex items-center gap-2 rounded-lg bg-white px-6 py-3 text-sm font-semibold text-gray-900 transition-colors hover:bg-gray-100"
+              >
+                <Phone className="h-4 w-4" />
+                Contact sales
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+              </Link>
+              <Link
+                href="/case-studies"
+                className="inline-flex items-center rounded-lg border border-white/15 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/5"
+              >
+                View case studies
+              </Link>
             </div>
-
-            <div className="relative">
-              <h2 className="text-3xl font-bold text-white sm:text-4xl">
-                Need a custom plan?
-              </h2>
-              <p className="mx-auto mt-4 max-w-xl text-lg text-emerald-100">
-                For large organizations with unique requirements, we create tailored solutions
-                that fit your exact needs. Let us design a plan around your green infrastructure goals.
-              </p>
-              <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
-                <Link
-                  href="/contact"
-                  className="group flex items-center gap-2 rounded-xl bg-white px-8 py-3.5 text-sm font-semibold text-emerald-700 shadow-lg transition-all hover:-translate-y-0.5 hover:shadow-xl"
-                >
-                  <Phone className="h-4 w-4" />
-                  Contact Sales
-                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                </Link>
-                <Link
-                  href="/case-studies"
-                  className="rounded-xl border border-white/30 bg-white/10 px-8 py-3.5 text-sm font-semibold text-white backdrop-blur-sm transition-all hover:bg-white/20"
-                >
-                  View Case Studies
-                </Link>
-              </div>
-            </div>
-          </motion.div>
+          </div>
         </div>
       </section>
     </div>
