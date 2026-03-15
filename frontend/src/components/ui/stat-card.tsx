@@ -191,18 +191,20 @@ const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
         className={cn(
           "relative overflow-hidden rounded-2xl p-5",
           /* Glassmorphism */
-          "bg-white/60 dark:bg-gray-900/50",
-          "backdrop-blur-xl backdrop-saturate-150",
-          "border border-white/30 dark:border-white/10",
-          "shadow-lg shadow-emerald-900/5",
-          "hover:shadow-xl hover:shadow-emerald-900/10",
+          "bg-white/70 dark:bg-gray-900/50",
+          "backdrop-blur-xl backdrop-saturate-[1.8]",
+          "border border-white/40 dark:border-white/[0.08]",
+          "shadow-[0_8px_32px_rgba(0,0,0,0.04),0_2px_8px_rgba(16,185,129,0.04)]",
+          "hover:shadow-[0_16px_48px_rgba(0,0,0,0.06),0_4px_12px_rgba(16,185,129,0.08)]",
           "transition-all duration-300",
           className
         )}
-        whileHover={{ y: -2 }}
+        whileHover={{ y: -3 }}
         transition={{ type: "spring", stiffness: 300, damping: 20 }}
         {...props}
       >
+        {/* Gradient accent line at top */}
+        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-emerald-400/80 via-green-500/60 to-teal-400/40" />
         {/* Top row: icon + trend */}
         <div className="flex items-start justify-between mb-3">
           {icon && (
@@ -228,7 +230,7 @@ const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
               {prefix}
             </span>
           )}
-          <motion.span className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
+          <motion.span className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white font-heading">
             {animatedValue}
           </motion.span>
           {suffix && (
