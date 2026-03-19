@@ -2,329 +2,288 @@
 
 import { useState, useRef } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { motion, useInView, AnimatePresence } from 'framer-motion';
 import {
   Building2,
   Home,
-  ShoppingBag,
+  Hotel,
   TreePine,
   Check,
   ArrowRight,
-  Sparkles,
   Users,
   TrendingUp,
+  Sparkles,
   Zap,
 } from 'lucide-react';
-import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { IMAGES } from '@/lib/images';
-import { cardLift, buttonPress } from '@/animations/micro-interactions';
 
 /* -------------------------------------------------------------------------- */
-/*  Premium Solutions data with real images                                  */
+/*  Solutions data                                                            */
 /* -------------------------------------------------------------------------- */
 
 const solutions = [
   {
     id: 'corporate',
     icon: Building2,
-    tab: 'Corporate',
-    title: 'Workspaces that inspire productivity',
-    subtitle: 'Biophilic office environments',
-    description:
-      'Transform sterile offices into vibrant ecosystems. Our corporate greenery solutions have been proven to boost employee satisfaction by 40% and productivity by 15%.',
-    longDescription: 'Every great company understands that happy employees are productive employees. Our biophilic office designs don\'t just add plants—they create environments where people thrive.',
+    label: 'Corporate',
+    title: 'Workspaces that inspire',
+    subtitle: 'Biophilic office environments that boost productivity',
+    description: 'Transform sterile offices into vibrant ecosystems. Our corporate greenery solutions are proven to boost employee satisfaction by 40% and productivity by 15%.',
     features: [
       'Living walls & vertical gardens',
-      'Air-purifying desk plants',
-      'Wellness-focused curation',
-      'Maintenance-free solutions',
+      'Air-purifying desk arrangements',
+      'Wellness-focused plant curation',
+      'Zero-maintenance solutions',
     ],
-    metric: { value: '40%', label: 'boost in employee satisfaction', icon: Users },
+    stat: { value: '40%', label: 'boost in satisfaction' },
+    statIcon: Users,
     image: IMAGES.solutions.corporate,
-    accent: 'from-blue-600 to-blue-500',
-    bgGradient: 'from-blue-50/50 to-white',
+    color: 'blue',
   },
   {
     id: 'residential',
     icon: Home,
-    tab: 'Residential',
-    title: 'Green living made effortless',
-    subtitle: 'Balcony & indoor gardens',
-    description:
-      'Enjoy professional-grade greenery in your home without the hassle. Our residential service achieves 3x higher plant survival rates than DIY approaches.',
-    longDescription: 'Your home should be your sanctuary. We bring that vision to life with curated plant selections that thrive in your specific space and lighting conditions.',
+    label: 'Residential',
+    title: 'Green living, effortlessly',
+    subtitle: 'Professional plant care for your home',
+    description: 'Enjoy professional-grade greenery at home without the hassle. Our residential service achieves 3x higher plant survival rates than DIY approaches.',
     features: [
       'Balcony garden design',
-      'Seasonal plant rotations',
+      'Indoor plant styling',
       'Pet-safe selections',
-      'Growth guarantee',
+      'Seasonal rotations',
     ],
-    metric: { value: '3x', label: 'plant survival rate vs. self-care', icon: TrendingUp },
+    stat: { value: '3x', label: 'plant survival rate' },
+    statIcon: TrendingUp,
     image: IMAGES.solutions.residential,
-    accent: 'from-emerald-600 to-emerald-500',
-    bgGradient: 'from-emerald-50/50 to-white',
+    color: 'emerald',
   },
   {
-    id: 'retail',
-    icon: ShoppingBag,
-    tab: 'Hospitality',
-    title: 'Spaces that customers remember',
-    subtitle: 'Brand-aligned green design',
-    description:
-      'Turn your commercial space into an Instagram-worthy destination. Our hospitality clients see an average 28% increase in foot traffic and customer engagement.',
-    longDescription: 'First impressions matter. Create memorable experiences that customers share, return to, and recommend with thoughtfully designed living environments.',
+    id: 'hospitality',
+    icon: Hotel,
+    label: 'Hospitality',
+    title: 'Spaces customers remember',
+    subtitle: 'Brand-aligned green design for commercial spaces',
+    description: 'Turn your commercial space into an Instagram-worthy destination. Our hospitality clients see an average 28% increase in foot traffic.',
     features: [
       'Brand-aligned aesthetics',
       'Seasonal themed displays',
-      'Event & pop-up greenery',
+      'Event greenery services',
       'Fragrance integration',
     ],
-    metric: { value: '28%', label: 'increase in foot traffic', icon: Sparkles },
+    stat: { value: '28%', label: 'more foot traffic' },
+    statIcon: Sparkles,
     image: IMAGES.solutions.retail,
-    accent: 'from-purple-600 to-purple-500',
-    bgGradient: 'from-purple-50/50 to-white',
+    color: 'purple',
   },
   {
-    id: 'urban',
+    id: 'municipal',
     icon: TreePine,
-    tab: 'Municipal',
-    title: 'Cities designed for the future',
-    subtitle: 'Smart urban forestry',
-    description:
-      'Municipal green infrastructure that scales. Our IoT-enabled monitoring and predictive maintenance reduce costs by 60% while improving urban biodiversity.',
-    longDescription: 'Building sustainable cities requires intelligent systems. Our urban forestry platform combines IoT monitoring with expert horticultural knowledge for scalable green infrastructure.',
+    label: 'Municipal',
+    title: 'Cities built for the future',
+    subtitle: 'Smart urban forestry at scale',
+    description: 'Municipal green infrastructure powered by IoT. Our monitoring and predictive maintenance reduce costs by 60% while improving urban biodiversity.',
     features: [
       'IoT sensor networks',
       'Predictive maintenance',
       'Biodiversity tracking',
-      'Climate resilience',
+      'Climate resilience planning',
     ],
-    metric: { value: '60%', label: 'reduction in maintenance costs', icon: Zap },
-    image: IMAGES.solutions.coworking, // Using coworking as urban alternative
-    accent: 'from-green-600 to-green-500',
-    bgGradient: 'from-green-50/50 to-white',
+    stat: { value: '60%', label: 'cost reduction' },
+    statIcon: Zap,
+    image: IMAGES.solutions.coworking,
+    color: 'green',
   },
 ];
 
+const colorMap = {
+  blue: { bg: 'bg-blue-500' as const, text: 'text-blue-600' as const, border: 'border-blue-200' as const, light: 'bg-blue-50' as const },
+  emerald: { bg: 'bg-emerald-500' as const, text: 'text-emerald-600' as const, border: 'border-emerald-200' as const, light: 'bg-emerald-50' as const },
+  purple: { bg: 'bg-purple-500' as const, text: 'text-purple-600' as const, border: 'border-purple-200' as const, light: 'bg-purple-50' as const },
+  green: { bg: 'bg-green-500' as const, text: 'text-green-600' as const, border: 'border-green-200' as const, light: 'bg-green-50' as const },
+} as const;
+
 /* -------------------------------------------------------------------------- */
-/*  Premium Solutions Section                                                 */
+/*  Solutions Section                                                         */
 /* -------------------------------------------------------------------------- */
 
 export function SolutionsSection() {
   const [activeIdx, setActiveIdx] = useState(0);
-  const headingRef = useRef<HTMLDivElement>(null);
-  const isHeadingInView = useInView(headingRef, { once: true, margin: '-80px' });
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const isInView = useInView(sectionRef, { once: true, margin: '-100px' });
   const active = solutions[activeIdx]!;
+  const colors = colorMap[active.color as keyof typeof colorMap] ?? colorMap.emerald;
 
   return (
-    <section className="relative overflow-hidden py-24 sm:py-32">
-      {/* Premium background system */}
-      <div className="absolute inset-0 bg-gradient-to-b from-gray-50/30 to-white" />
-      <div className="absolute inset-0 bg-gradient-mesh-warm opacity-40" />
+    <section ref={sectionRef} className="relative py-24 sm:py-32 overflow-hidden">
+      {/* Background */}
+      <div className="absolute inset-0 bg-white" />
 
-      {/* Animated dot pattern */}
-      <motion.div
-        animate={{ opacity: [0.2, 0.4, 0.2] }}
-        transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
-        className="absolute inset-0 bg-[radial-gradient(circle_at_2px_2px,_rgba(16,185,129,0.12)_2px,_transparent_0)] bg-[length:48px_48px]"
-      />
-
-      <div className="relative mx-auto max-w-7xl px-6 sm:px-8 lg:px-12">
-        {/* Premium Section Header */}
+      <div className="relative max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
+        {/* Section header */}
         <motion.div
-          ref={headingRef}
-          initial={{ opacity: 0, y: 32 }}
-          animate={isHeadingInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
           className="max-w-2xl"
         >
-          <div className="inline-flex items-center gap-2 rounded-full glass-emerald-premium px-4 py-2 text-sm font-bold uppercase tracking-widest text-emerald-700">
-            <Building2 className="h-4 w-4" />
+          <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gray-100 text-sm font-medium text-gray-600">
+            <Building2 className="w-4 h-4" />
             Solutions
-          </div>
-
-          <h2 className="mt-8 text-display-lg lg:text-display-xl font-extrabold tracking-tight text-gray-900 font-heading">
-            Every space.
-            <span className="block bg-gradient-to-r from-emerald-600 via-green-500 to-teal-500 bg-clip-text text-transparent">
+          </span>
+          <h2 className="mt-6 font-display text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-gray-900">
+            Every space.{' '}
+            <span className="bg-gradient-to-r from-emerald-600 via-green-500 to-teal-500 bg-clip-text text-transparent">
               Every need.
             </span>
           </h2>
-
-          <p className="mt-6 text-xl leading-relaxed text-gray-600">
-            From corporate offices to residential balconies, we create thriving green environments tailored to your unique space and goals.
+          <p className="mt-4 text-lg text-gray-600">
+            From corporate offices to residential balconies, we create thriving environments tailored to your unique space.
           </p>
         </motion.div>
 
-        {/* Premium Tab Navigation */}
+        {/* Tab navigation */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
-          animate={isHeadingInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-          className="mt-16"
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.6, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+          className="mt-12"
         >
-          <div className="glass-premium rounded-2xl p-2 shadow-premium-md">
-            <div className="flex gap-1 overflow-x-auto scrollbar-hide">
-              {solutions.map((sol, i) => (
-                <motion.button
-                  key={sol.id}
-                  onClick={() => setActiveIdx(i)}
-                  variants={buttonPress}
-                  initial="rest"
-                  whileHover="hover"
-                  whileTap="pressed"
-                  className={cn(
-                    'relative flex items-center gap-3 whitespace-nowrap rounded-xl px-6 py-4 text-sm font-bold transition-all duration-300',
-                    'min-w-[140px] justify-center',
-                    activeIdx === i
-                      ? 'text-gray-900'
-                      : 'text-gray-500 hover:text-gray-700',
-                  )}
-                >
-                  {activeIdx === i && (
-                    <motion.div
-                      layoutId="solutions-tab-bg"
-                      className="absolute inset-0 rounded-xl bg-white shadow-premium ring-1 ring-gray-200/50"
-                      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                    />
-                  )}
-                  <sol.icon className={cn(
-                    "relative z-10 h-5 w-5 transition-colors duration-300",
-                    activeIdx === i
-                      ? "text-emerald-600"
-                      : "text-gray-400 group-hover:text-gray-600"
-                  )} />
-                  <span className="relative z-10 font-heading">{sol.tab}</span>
-                </motion.button>
-              ))}
-            </div>
+          <div className="inline-flex items-center p-1 rounded-full bg-gray-100">
+            {solutions.map((sol, i) => (
+              <button
+                key={sol.id}
+                onClick={() => setActiveIdx(i)}
+                className={cn(
+                  'relative flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium',
+                  'transition-all duration-300',
+                  activeIdx === i ? 'text-white' : 'text-gray-600 hover:text-gray-900',
+                )}
+              >
+                {activeIdx === i && (
+                  <motion.div
+                    layoutId="solutions-tab"
+                    className="absolute inset-0 bg-gray-900 rounded-full"
+                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                  />
+                )}
+                <sol.icon className="relative z-10 w-4 h-4" />
+                <span className="relative z-10 hidden sm:inline">{sol.label}</span>
+              </button>
+            ))}
           </div>
         </motion.div>
 
-        {/* Premium Content Panel */}
-        <div className="mt-16">
+        {/* Content panel */}
+        <div className="mt-12">
           <AnimatePresence mode="wait">
             <motion.div
               key={active.id}
-              initial={{ opacity: 0, y: 24, filter: 'blur(4px)' }}
-              animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-              exit={{ opacity: 0, y: -12, filter: 'blur(2px)' }}
-              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-              className="grid items-center gap-12 lg:grid-cols-2 lg:gap-20"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+              className="grid gap-8 lg:grid-cols-2 lg:gap-16 items-center"
             >
-              {/* Premium Visual Panel */}
+              {/* Image */}
               <motion.div
-                variants={cardLift}
-                initial="rest"
-                whileHover="hover"
-                className="group relative aspect-[5/4] overflow-hidden rounded-3xl"
+                whileHover={{ scale: 1.02 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                className="relative aspect-[4/3] rounded-3xl overflow-hidden group"
               >
-                {/* Background Image */}
-                <div className="absolute inset-0">
-                  <Image
-                    src={active.image}
-                    alt={active.title}
-                    fill
-                    className="object-cover transition-transform duration-700 group-hover:scale-105"
-                    sizes="(max-width: 768px) 100vw, 50vw"
-                  />
-                  {/* Gradient overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-gray-900/60 via-gray-900/20 to-transparent" />
-                  {/* Accent color overlay */}
-                  <div className={cn(
-                    'absolute inset-0 bg-gradient-to-t opacity-10 group-hover:opacity-20 transition-opacity duration-500',
-                    active.accent
-                  )} />
-                </div>
+                <Image
+                  src={active.image}
+                  alt={active.title}
+                  fill
+                  className="object-cover transition-transform duration-700 group-hover:scale-105"
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                />
 
-                {/* Floating Metric Card */}
+                {/* Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-gray-900/60 via-gray-900/20 to-transparent" />
+
+                {/* Stat card */}
                 <div className="absolute bottom-6 left-6 right-6">
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.3 }}
-                    className="glass-premium rounded-2xl p-6 shadow-premium-lg ring-1 ring-white/20"
+                    transition={{ delay: 0.3, duration: 0.5 }}
+                    className="inline-flex items-center gap-4 rounded-2xl bg-white/95 backdrop-blur-sm p-5 shadow-xl"
                   >
-                    <div className="flex items-center gap-4">
-                      <div className={cn(
-                        'flex h-12 w-12 items-center justify-center rounded-xl text-white shadow-lg',
-                        `bg-gradient-to-br ${active.accent}`
-                      )}>
-                        <active.metric.icon className="h-6 w-6" />
+                    <div className={cn(
+                      'flex items-center justify-center w-12 h-12 rounded-xl',
+                      colors.light,
+                    )}>
+                      <active.statIcon className={cn('w-6 h-6', colors.text)} />
+                    </div>
+                    <div>
+                      <div className="text-3xl font-bold text-gray-900 font-display">
+                        {active.stat.value}
                       </div>
-                      <div>
-                        <div className="text-3xl font-bold text-gray-900 font-heading">
-                          {active.metric.value}
-                        </div>
-                        <div className="text-sm font-medium text-gray-600">
-                          {active.metric.label}
-                        </div>
+                      <div className="text-sm text-gray-600">
+                        {active.stat.label}
                       </div>
                     </div>
                   </motion.div>
                 </div>
 
-                {/* Category Badge */}
+                {/* Category badge */}
                 <div className="absolute top-6 left-6">
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.5, delay: 0.1 }}
-                    className="inline-flex items-center gap-2 rounded-full bg-white/90 backdrop-blur-sm px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-gray-700"
-                  >
-                    <active.icon className="h-3 w-3" />
+                  <span className={cn(
+                    'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold',
+                    'bg-white/90 backdrop-blur-sm text-gray-700',
+                  )}>
+                    <active.icon className="w-3.5 h-3.5" />
                     {active.subtitle}
-                  </motion.div>
+                  </span>
                 </div>
-
-                {/* Hover shine effect */}
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out" />
               </motion.div>
 
-              {/* Premium Content Panel */}
+              {/* Content */}
               <div className="space-y-8">
-                <div className="space-y-6">
+                <div>
                   <motion.h3
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.1 }}
-                    className="text-display-md font-bold tracking-tight text-gray-900 font-heading"
+                    transition={{ delay: 0.1, duration: 0.5 }}
+                    className="font-display text-2xl sm:text-3xl font-bold text-gray-900"
                   >
                     {active.title}
                   </motion.h3>
-
                   <motion.p
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.2 }}
-                    className="text-lg leading-relaxed text-gray-600"
+                    transition={{ delay: 0.2, duration: 0.5 }}
+                    className="mt-4 text-lg text-gray-600 leading-relaxed"
                   >
-                    {active.longDescription}
+                    {active.description}
                   </motion.p>
                 </div>
 
-                {/* Features List */}
+                {/* Features */}
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 0.3 }}
-                  className="space-y-4"
+                  transition={{ delay: 0.3, duration: 0.5 }}
+                  className="space-y-3"
                 >
-                  {active.features.map((feature, idx) => (
+                  {active.features.map((feature, i) => (
                     <motion.div
                       key={feature}
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.4, delay: 0.4 + idx * 0.1 }}
-                      className="flex items-center gap-4"
+                      transition={{ delay: 0.4 + i * 0.1, duration: 0.4 }}
+                      className="flex items-center gap-3"
                     >
                       <div className={cn(
-                        'flex h-6 w-6 shrink-0 items-center justify-center rounded-full',
-                        `bg-gradient-to-br ${active.accent} shadow-sm`
+                        'flex items-center justify-center w-5 h-5 rounded-full',
+                        colors.bg,
                       )}>
-                        <Check className="h-3 w-3 text-white" />
+                        <Check className="w-3 h-3 text-white" strokeWidth={2.5} />
                       </div>
-                      <span className="text-base font-medium text-gray-700">{feature}</span>
+                      <span className="text-gray-700">{feature}</span>
                     </motion.div>
                   ))}
                 </motion.div>
@@ -333,29 +292,22 @@ export function SolutionsSection() {
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 0.7 }}
+                  transition={{ delay: 0.6, duration: 0.5 }}
                 >
                   <Link href="/contact">
                     <motion.button
-                      variants={buttonPress}
-                      initial="rest"
-                      whileHover="hover"
-                      whileTap="pressed"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
                       className={cn(
-                        'group inline-flex items-center gap-3 rounded-full px-8 py-4',
-                        'bg-gradient-to-r text-white font-bold shadow-lg',
+                        'group inline-flex items-center gap-2.5 rounded-full',
+                        'bg-gray-900 hover:bg-gray-800',
+                        'px-6 py-3 text-[15px] font-semibold text-white',
+                        'shadow-lg shadow-gray-900/20 hover:shadow-xl',
                         'transition-all duration-300',
-                        active.accent,
-                        'hover:shadow-xl'
                       )}
                     >
-                      <span>Get a custom proposal</span>
-                      <motion.div
-                        animate={{ x: [0, 4, 0] }}
-                        transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-                      >
-                        <ArrowRight className="h-5 w-5" />
-                      </motion.div>
+                      Get a free consultation
+                      <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                     </motion.button>
                   </Link>
                 </motion.div>
@@ -364,9 +316,6 @@ export function SolutionsSection() {
           </AnimatePresence>
         </div>
       </div>
-
-      {/* Bottom fade */}
-      <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-white to-transparent" />
     </section>
   );
 }
