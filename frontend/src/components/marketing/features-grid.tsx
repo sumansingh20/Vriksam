@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef } from 'react';
+import Image from 'next/image';
 import { motion, useInView } from 'framer-motion';
 import {
   Brain,
@@ -11,420 +12,265 @@ import {
   Users,
   Layout,
   Wifi,
+  ArrowUpRight,
+  Zap,
+  Shield,
+  Target,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { IMAGES } from '@/lib/images';
+import { cardLift, iconBounce } from '@/animations/micro-interactions';
 
 /* -------------------------------------------------------------------------- */
-/*  Featured features — dark cards with animated SVG visuals                   */
+/*  Premium feature data with enhanced copy                                   */
 /* -------------------------------------------------------------------------- */
 
-const featuredFeatures = [
+const coreFeatures = [
   {
     icon: Brain,
-    title: 'AI Plant Health',
-    description:
-      'AI-powered diagnostics and health monitoring that catches issues before they become visible. Computer vision analyzes leaf patterns, soil conditions, and growth metrics in real time.',
-    visual: 'ai' as const,
+    title: 'Intelligent Health Monitoring',
+    description: 'Catch problems before they show. Our AI analyzes visual cues, growth patterns, and environmental data to predict plant health issues weeks in advance.',
+    longDescription: 'Computer vision meets plant science. Every leaf tells a story—color changes, growth patterns, stress indicators. Our AI reads them all.',
+    image: IMAGES.features.aiHealth,
+    accent: 'from-emerald-600 to-emerald-500',
+    category: 'Intelligence',
   },
   {
     icon: BarChart3,
-    title: 'Real-time Analytics',
-    description:
-      'Live dashboards with growth metrics, health trends, and performance indicators. Make data-driven decisions with comprehensive analytics across all your green spaces.',
-    visual: 'chart' as const,
+    title: 'Real-time Impact Dashboard',
+    description: 'See the bigger picture with live analytics. Track growth, environmental impact, and team performance across all locations in one beautiful dashboard.',
+    longDescription: 'Data that drives decisions. From CO2 absorbed to team productivity, get insights that matter to your business and the planet.',
+    image: IMAGES.features.analytics,
+    accent: 'from-blue-600 to-blue-500',
+    category: 'Analytics',
+  },
+  {
+    icon: Calendar,
+    title: 'Perfect Scheduling Intelligence',
+    description: 'Never miss care again. AI-powered scheduling adapts to weather, plant needs, and team capacity for optimal timing every time.',
+    longDescription: 'Smart schedules that work with nature. Weather delays? Growth spurts? Our system adjusts automatically.',
+    image: IMAGES.features.maintenance,
+    accent: 'from-purple-600 to-purple-500',
+    category: 'Automation',
   },
 ];
 
-/* -------------------------------------------------------------------------- */
-/*  Regular features — white/glass cards                                       */
-/* -------------------------------------------------------------------------- */
-
-const regularFeatures = [
-  {
-    icon: Calendar,
-    title: 'Smart Scheduling',
-    description:
-      'Automated maintenance scheduling and routing that adapts to weather, plant needs, and team availability.',
-  },
+const supportingFeatures = [
   {
     icon: FileBarChart,
-    title: 'ESG Reporting',
-    description:
-      'Environmental impact tracking and compliance reports. Board-ready sustainability metrics generated automatically.',
+    title: 'ESG Made Simple',
+    description: 'Board-ready sustainability reports generated automatically.',
+    accent: 'from-green-600 to-green-500',
   },
   {
     icon: Package,
-    title: 'Inventory Management',
-    description:
-      'Track plant assets, procurement, and supplier performance across all your locations.',
+    title: 'Smart Inventory',
+    description: 'Track every plant, pot, and tool across all your locations.',
+    accent: 'from-orange-600 to-orange-500',
   },
   {
     icon: Users,
-    title: 'Team Collaboration',
-    description:
-      'Assign tasks, manage technicians, and track progress with real-time coordination tools.',
+    title: 'Team Coordination',
+    description: 'Keep everyone aligned with real-time task management.',
+    accent: 'from-pink-600 to-pink-500',
   },
   {
     icon: Layout,
-    title: 'Client Portal',
-    description:
-      'Self-service dashboards where your clients can monitor their green spaces and view impact reports.',
+    title: 'Client Transparency',
+    description: 'Give clients real-time access to their green space data.',
+    accent: 'from-indigo-600 to-indigo-500',
   },
   {
     icon: Wifi,
-    title: 'IoT Integration',
-    description:
-      'Connect soil moisture, light, and temperature sensors for fully automated monitoring.',
+    title: 'IoT Ready',
+    description: 'Connect sensors for fully automated monitoring.',
+    accent: 'from-teal-600 to-teal-500',
+  },
+  {
+    icon: Shield,
+    title: 'Enterprise Security',
+    description: 'Bank-level security for your sensitive data.',
+    accent: 'from-gray-600 to-gray-500',
   },
 ];
 
 /* -------------------------------------------------------------------------- */
-/*  Animated SVG: AI neural-network dots & connections                         */
+/*  Premium Core Feature Card                                                 */
 /* -------------------------------------------------------------------------- */
 
-function AIVisual() {
-  const dots = [
-    { cx: 18, cy: 18, delay: 0 },
-    { cx: 50, cy: 12, delay: 0.3 },
-    { cx: 82, cy: 22, delay: 0.6 },
-    { cx: 34, cy: 42, delay: 0.2 },
-    { cx: 66, cy: 38, delay: 0.5 },
-    { cx: 18, cy: 62, delay: 0.4 },
-    { cx: 50, cy: 68, delay: 0.1 },
-    { cx: 82, cy: 58, delay: 0.7 },
-    { cx: 96, cy: 42, delay: 0.35 },
-  ];
-
-  const connections: [number, number][] = [
-    [0, 1], [1, 2], [0, 3], [1, 3], [1, 4], [2, 4],
-    [3, 5], [3, 6], [4, 6], [4, 7], [5, 6], [6, 7],
-    [2, 8], [4, 8], [7, 8],
-  ];
-
-  return (
-    <svg viewBox="0 0 110 82" className="h-full w-full" fill="none">
-      {/* Connection lines */}
-      {connections.map(([from, to], i) => (
-        <motion.line
-          key={`conn-${i}`}
-          x1={dots[from]!.cx}
-          y1={dots[from]!.cy}
-          x2={dots[to]!.cx}
-          y2={dots[to]!.cy}
-          stroke="rgba(52, 211, 153, 0.18)"
-          strokeWidth="0.7"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: [0, 1, 0.6, 1] }}
-          transition={{
-            duration: 2,
-            delay: 0.4 + i * 0.06,
-            ease: 'easeOut',
-          }}
-        />
-      ))}
-
-      {/* Pulsing dots */}
-      {dots.map((dot, i) => (
-        <g key={`dot-${i}`}>
-          {/* Outer pulse ring */}
-          <motion.circle
-            cx={dot.cx}
-            cy={dot.cy}
-            r="7"
-            fill="rgba(16, 185, 129, 0.08)"
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: [0, 1.6, 1, 1.4, 1], opacity: [0, 0.6, 0.3, 0.5, 0.3] }}
-            transition={{
-              duration: 3.5,
-              delay: dot.delay,
-              repeat: Infinity,
-              repeatDelay: 1.5,
-            }}
-          />
-          {/* Core dot */}
-          <motion.circle
-            cx={dot.cx}
-            cy={dot.cy}
-            r="2.8"
-            fill="#10b981"
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.5, delay: dot.delay + 0.2, ease: 'backOut' }}
-          />
-        </g>
-      ))}
-
-      {/* Traveling data pulse along a connection */}
-      <motion.circle
-        r="1.5"
-        fill="#34d399"
-        initial={{ opacity: 0 }}
-        animate={{
-          cx: [dots[0]!.cx, dots[1]!.cx, dots[4]!.cx, dots[7]!.cx, dots[8]!.cx],
-          cy: [dots[0]!.cy, dots[1]!.cy, dots[4]!.cy, dots[7]!.cy, dots[8]!.cy],
-          opacity: [0, 1, 1, 1, 0],
-        }}
-        transition={{
-          duration: 3,
-          delay: 2,
-          repeat: Infinity,
-          repeatDelay: 2,
-          ease: 'easeInOut',
-        }}
-      />
-    </svg>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-/*  Animated SVG: line chart drawing itself                                    */
-/* -------------------------------------------------------------------------- */
-
-function ChartVisual() {
-  const chartPath =
-    'M 5 52 C 12 48, 18 46, 25 42 S 35 36, 45 30 S 55 22, 62 24 S 72 18, 80 14 L 95 6';
-  const areaPath =
-    'M 5 52 C 12 48, 18 46, 25 42 S 35 36, 45 30 S 55 22, 62 24 S 72 18, 80 14 L 95 6 L 95 62 L 5 62 Z';
-
-  return (
-    <svg viewBox="0 0 100 68" className="h-full w-full" fill="none">
-      {/* Horizontal grid lines */}
-      {[18, 30, 42, 54].map((y, i) => (
-        <motion.line
-          key={`grid-${i}`}
-          x1="5"
-          y1={y}
-          x2="95"
-          y2={y}
-          stroke="rgba(52, 211, 153, 0.08)"
-          strokeWidth="0.5"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.2 + i * 0.1 }}
-        />
-      ))}
-
-      {/* Vertical grid lines */}
-      {[5, 25, 45, 65, 85, 95].map((x, i) => (
-        <motion.line
-          key={`vgrid-${i}`}
-          x1={x}
-          y1="6"
-          x2={x}
-          y2="62"
-          stroke="rgba(52, 211, 153, 0.05)"
-          strokeWidth="0.5"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.3 + i * 0.08 }}
-        />
-      ))}
-
-      {/* Gradient area fill */}
-      <motion.path
-        d={areaPath}
-        fill="url(#bentoChartGrad)"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.8, delay: 1.4 }}
-      />
-
-      {/* Chart line */}
-      <motion.path
-        d={chartPath}
-        stroke="url(#bentoLineGrad)"
-        strokeWidth="2"
-        strokeLinecap="round"
-        fill="none"
-        initial={{ pathLength: 0, opacity: 0 }}
-        animate={{ pathLength: 1, opacity: 1 }}
-        transition={{ duration: 1.8, delay: 0.6, ease: 'easeOut' }}
-      />
-
-      {/* Data points along the line */}
-      {[
-        { cx: 25, cy: 42, delay: 1.0 },
-        { cx: 45, cy: 30, delay: 1.3 },
-        { cx: 62, cy: 24, delay: 1.5 },
-        { cx: 80, cy: 14, delay: 1.7 },
-      ].map((pt, i) => (
-        <motion.circle
-          key={`pt-${i}`}
-          cx={pt.cx}
-          cy={pt.cy}
-          r="1.8"
-          fill="#10b981"
-          stroke="#064e3b"
-          strokeWidth="0.5"
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ duration: 0.3, delay: pt.delay, ease: 'backOut' }}
-        />
-      ))}
-
-      {/* Endpoint pulse */}
-      <motion.circle
-        cx="95"
-        cy="6"
-        r="2.5"
-        fill="#10b981"
-        initial={{ scale: 0 }}
-        animate={{ scale: [0, 1.4, 1] }}
-        transition={{ duration: 0.5, delay: 2.2, ease: 'backOut' }}
-      />
-      <motion.circle
-        cx="95"
-        cy="6"
-        r="6"
-        fill="rgba(16, 185, 129, 0.15)"
-        initial={{ scale: 0, opacity: 0 }}
-        animate={{ scale: [0, 1.5, 1, 1.3, 1], opacity: [0, 0.6, 0.3, 0.5, 0.3] }}
-        transition={{
-          duration: 3,
-          delay: 2.4,
-          repeat: Infinity,
-          repeatDelay: 1.5,
-        }}
-      />
-
-      <defs>
-        <linearGradient id="bentoChartGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="rgba(16, 185, 129, 0.15)" />
-          <stop offset="100%" stopColor="rgba(16, 185, 129, 0)" />
-        </linearGradient>
-        <linearGradient id="bentoLineGrad" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor="#34d399" />
-          <stop offset="100%" stopColor="#10b981" />
-        </linearGradient>
-      </defs>
-    </svg>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-/*  Featured Card — dark gradient bg, spans 2 cols, animated visual            */
-/* -------------------------------------------------------------------------- */
-
-function FeaturedCard({
-  feature,
-  index,
-  isInView,
-}: {
-  feature: (typeof featuredFeatures)[number];
+interface CoreFeatureCardProps {
+  feature: typeof coreFeatures[0];
   index: number;
   isInView: boolean;
-}) {
+}
+
+function CoreFeatureCard({ feature, index, isInView }: CoreFeatureCardProps) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 32 }}
-      animate={isInView ? { opacity: 1, y: 0 } : {}}
+      initial={{ opacity: 0, y: 32, filter: 'blur(4px)' }}
+      animate={
+        isInView
+          ? { opacity: 1, y: 0, filter: 'blur(0px)' }
+          : { opacity: 0, y: 32, filter: 'blur(4px)' }
+      }
       transition={{
-        duration: 0.7,
-        delay: index * 0.12,
+        duration: 0.8,
+        delay: 0.2 + index * 0.15,
         ease: [0.22, 1, 0.36, 1],
       }}
-      className="group relative col-span-1 sm:col-span-2"
+      className={cn(
+        'group relative overflow-hidden rounded-3xl',
+        'h-[480px] lg:h-[520px]',
+        index === 1 ? 'lg:col-span-2' : 'lg:col-span-1'
+      )}
     >
-      <div
-        className={cn(
-          'relative h-full overflow-hidden rounded-3xl',
-          'bg-gradient-to-br from-gray-900 via-gray-900 to-emerald-950',
-          'p-8 sm:p-10',
-          'border border-white/[0.06]',
-          'shadow-2xl shadow-emerald-900/10',
-          'transition-all duration-500',
-          'hover:shadow-emerald-900/20 hover:border-emerald-500/20',
-        )}
+      <motion.div
+        variants={cardLift}
+        initial="rest"
+        whileHover="hover"
+        className="h-full w-full cursor-pointer"
       >
-        {/* Ambient glow spots */}
-        <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-emerald-500/[0.07] blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-emerald-400/[0.05] blur-3xl" />
+        {/* Background Image */}
+        <div className="absolute inset-0">
+          <Image
+            src={feature.image}
+            alt={feature.title}
+            fill
+            className="object-cover transition-transform duration-700 group-hover:scale-105"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          />
+          {/* Dark overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-gray-900/90 via-gray-900/50 to-gray-900/20" />
+          {/* Accent color overlay */}
+          <div className={cn(
+            'absolute inset-0 bg-gradient-to-t opacity-20 group-hover:opacity-30 transition-opacity duration-500',
+            feature.accent
+          )} />
+        </div>
 
-        {/* Content + Visual */}
-        <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center sm:gap-10">
-          {/* Text side */}
-          <div className="flex-1 min-w-0">
-            <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 ring-1 ring-emerald-500/20">
-              <feature.icon className="h-6 w-6 text-emerald-400" />
+        {/* Content */}
+        <div className="relative z-10 flex h-full flex-col justify-between p-8 lg:p-10">
+          {/* Header */}
+          <div className="flex items-start justify-between">
+            <div className="flex flex-col gap-3">
+              <span className="inline-flex items-center gap-2 rounded-full bg-white/20 backdrop-blur-sm px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-white/90">
+                <Zap className="h-3 w-3" />
+                {feature.category}
+              </span>
+              <motion.div
+                variants={iconBounce}
+                initial="rest"
+                whileHover="hover"
+                className={cn(
+                  'flex h-12 w-12 items-center justify-center rounded-xl text-white shadow-lg',
+                  `bg-gradient-to-br ${feature.accent}`
+                )}
+              >
+                <feature.icon className="h-6 w-6" />
+              </motion.div>
             </div>
+            <ArrowUpRight className="h-6 w-6 text-white/60 opacity-0 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-1 group-hover:-translate-y-1" />
+          </div>
 
-            <h3 className="text-xl font-semibold text-white sm:text-2xl">
+          {/* Main content */}
+          <div className="space-y-4">
+            <h3 className="text-2xl font-bold text-white lg:text-3xl font-heading">
               {feature.title}
             </h3>
-            <p className="mt-3 max-w-md text-[15px] leading-relaxed text-gray-400">
+            <p className="text-base leading-relaxed text-white/80 lg:text-lg">
+              {feature.longDescription}
+            </p>
+
+            {/* Subtle shine effect */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out" />
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Premium Supporting Feature Card                                           */
+/* -------------------------------------------------------------------------- */
+
+interface SupportingFeatureCardProps {
+  feature: typeof supportingFeatures[0];
+  index: number;
+  isInView: boolean;
+}
+
+function SupportingFeatureCard({ feature, index, isInView }: SupportingFeatureCardProps) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 24, filter: 'blur(4px)' }}
+      animate={
+        isInView
+          ? { opacity: 1, y: 0, filter: 'blur(0px)' }
+          : { opacity: 0, y: 24, filter: 'blur(4px)' }
+      }
+      transition={{
+        duration: 0.7,
+        delay: 0.6 + index * 0.08,
+        ease: [0.22, 1, 0.36, 1],
+      }}
+    >
+      <motion.div
+        variants={cardLift}
+        initial="rest"
+        whileHover="hover"
+        className={cn(
+          'group relative h-full overflow-hidden rounded-2xl p-6',
+          'glass-premium border-white/60 shadow-premium',
+          'cursor-pointer transition-all duration-300',
+          'hover:shadow-card-hover'
+        )}
+      >
+        {/* Gradient accent line */}
+        <div className={cn(
+          'absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r transition-all duration-300',
+          'group-hover:h-1',
+          feature.accent
+        )} />
+
+        {/* Background pattern */}
+        <div className="absolute inset-0 bg-noise-subtle opacity-[0.02] group-hover:opacity-[0.04] transition-opacity duration-300" />
+
+        <div className="relative space-y-4">
+          {/* Icon */}
+          <motion.div
+            variants={iconBounce}
+            initial="rest"
+            whileHover="hover"
+            className={cn(
+              'flex h-11 w-11 items-center justify-center rounded-xl',
+              'bg-gradient-to-br shadow-sm ring-1 ring-black/5 text-white',
+              feature.accent
+            )}
+          >
+            <feature.icon className="h-5 w-5" />
+          </motion.div>
+
+          {/* Content */}
+          <div className="space-y-2">
+            <h4 className="text-lg font-bold text-gray-900 font-heading">
+              {feature.title}
+            </h4>
+            <p className="text-sm leading-relaxed text-gray-600">
               {feature.description}
             </p>
           </div>
 
-          {/* Animated SVG visual */}
-          <div className="h-36 w-full flex-shrink-0 sm:h-44 sm:w-52">
-            {feature.visual === 'ai' ? <AIVisual /> : <ChartVisual />}
-          </div>
+          {/* Hover indicator */}
+          <ArrowUpRight className="absolute top-6 right-6 h-4 w-4 text-gray-400 opacity-0 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
         </div>
-      </div>
+      </motion.div>
     </motion.div>
   );
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Regular Card — white/glass with emerald hover glow                         */
-/* -------------------------------------------------------------------------- */
-
-function RegularCard({
-  feature,
-  index,
-  isInView,
-}: {
-  feature: (typeof regularFeatures)[number];
-  index: number;
-  isInView: boolean;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 24 }}
-      animate={isInView ? { opacity: 1, y: 0 } : {}}
-      transition={{
-        duration: 0.5,
-        delay: 0.15 + index * 0.08,
-        ease: [0.22, 1, 0.36, 1],
-      }}
-      className="group relative"
-    >
-      <div
-        className={cn(
-          'relative h-full overflow-hidden rounded-2xl',
-          'bg-white/80 backdrop-blur-sm',
-          'border border-gray-200/80',
-          'p-7',
-          'shadow-sm',
-          'transition-all duration-300',
-          'hover:shadow-lg hover:shadow-emerald-500/[0.08]',
-          'hover:border-emerald-300/60',
-        )}
-      >
-        {/* Hover gradient wash */}
-        <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-emerald-50/0 to-transparent transition-all duration-500 group-hover:from-emerald-50/60" />
-
-        <div className="relative">
-          {/* Icon container */}
-          <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-gray-50 ring-1 ring-gray-200/60 transition-all duration-300 group-hover:bg-emerald-50 group-hover:ring-emerald-200/60">
-            <feature.icon className="h-5 w-5 text-gray-600 transition-colors duration-300 group-hover:text-emerald-600" />
-          </div>
-
-          <h3 className="text-lg font-semibold text-gray-900">
-            {feature.title}
-          </h3>
-          <p className="mt-2 text-[15px] leading-relaxed text-gray-500">
-            {feature.description}
-          </p>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-/*  Features Grid — bento layout with visual variety                           */
+/*  Premium Features Section                                                  */
 /* -------------------------------------------------------------------------- */
 
 export function FeaturesGrid() {
@@ -432,80 +278,91 @@ export function FeaturesGrid() {
   const isInView = useInView(sectionRef, { once: true, margin: '-80px' });
 
   return (
-    <section className="relative overflow-hidden bg-gray-50/60 py-24 sm:py-32">
-      {/* Subtle dot-grid background */}
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,_rgba(0,0,0,0.03)_1px,_transparent_0)] bg-[length:24px_24px]" />
+    <section className="relative overflow-hidden py-24 sm:py-32">
+      {/* Premium background system */}
+      <div className="absolute inset-0 bg-gradient-to-b from-white via-gray-50/50 to-white" />
+      <div className="absolute inset-0 bg-gradient-mesh-premium opacity-60" />
+
+      {/* Subtle animated dot pattern */}
+      <motion.div
+        animate={{ opacity: [0.3, 0.5, 0.3] }}
+        transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+        className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,_rgba(16,185,129,0.15)_1px,_transparent_0)] bg-[length:32px_32px]"
+      />
 
       <div
         ref={sectionRef}
-        className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8"
+        className="relative mx-auto max-w-7xl px-6 sm:px-8 lg:px-12"
       >
-        {/* ---- Section header ---- */}
+        {/* Premium Section Header */}
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          className="mx-auto max-w-2xl text-center"
+          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+          className="mx-auto max-w-3xl text-center"
         >
-          <div className="inline-flex items-center rounded-full border border-emerald-200/60 bg-emerald-50/80 px-4 py-1.5 text-sm font-medium text-emerald-700 backdrop-blur-sm">
-            Platform Features
+          <div className="inline-flex items-center gap-2 rounded-full glass-emerald-premium px-4 py-2 text-sm font-bold uppercase tracking-widest text-emerald-700">
+            <Target className="h-4 w-4" />
+            Platform Capabilities
           </div>
 
-          <h2 className="mt-5 text-[clamp(1.75rem,4vw,3rem)] font-bold leading-[1.1] tracking-tight text-gray-900">
-            Everything you need to manage{' '}
-            <span className="bg-gradient-to-r from-emerald-600 via-green-500 to-teal-500 bg-clip-text text-transparent">
-              green spaces
+          <h2 className="mt-8 text-display-lg lg:text-display-xl font-extrabold tracking-tight text-gray-900 font-heading">
+            Intelligence meets
+            <span className="block bg-gradient-to-r from-emerald-600 via-green-500 to-teal-500 bg-clip-text text-transparent">
+              green infrastructure
             </span>
           </h2>
 
-          <p className="mt-5 text-lg leading-relaxed text-gray-500">
-            Eight integrated modules. One unified platform. Zero complexity.
+          <p className="mt-6 text-xl leading-relaxed text-gray-600 lg:text-2xl">
+            Three core modules. Six supporting tools. Infinite possibilities for creating thriving spaces.
           </p>
         </motion.div>
 
-        {/* ---- Bento grid ---- */}
-        <div className="mt-14 space-y-5">
-          {/* Row 1: Featured (span 2) + Regular (1) */}
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
-            <FeaturedCard
-              feature={featuredFeatures[0]!}
-              index={0}
-              isInView={isInView}
-            />
-            <RegularCard
-              feature={regularFeatures[0]!}
-              index={0}
-              isInView={isInView}
-            />
-          </div>
-
-          {/* Row 2: Regular (1) + Featured (span 2) */}
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
-            <RegularCard
-              feature={regularFeatures[1]!}
-              index={1}
-              isInView={isInView}
-            />
-            <FeaturedCard
-              feature={featuredFeatures[1]!}
-              index={1}
-              isInView={isInView}
-            />
-          </div>
-
-          {/* Row 3: 4 equal regular cards */}
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {regularFeatures.slice(2).map((feature, i) => (
-              <RegularCard
+        {/* Core Features Grid */}
+        <div className="mt-20">
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+            {coreFeatures.map((feature, index) => (
+              <CoreFeatureCard
                 key={feature.title}
                 feature={feature}
-                index={i + 2}
+                index={index}
+                isInView={isInView}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Supporting Features Grid */}
+        <div className="mt-16">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.8, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
+            className="mb-12 text-center"
+          >
+            <h3 className="text-display-sm font-bold text-gray-900 font-heading">
+              Plus everything you need to scale
+            </h3>
+            <p className="mt-4 text-lg text-gray-600">
+              Supporting tools that grow with your green infrastructure
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {supportingFeatures.map((feature, index) => (
+              <SupportingFeatureCard
+                key={feature.title}
+                feature={feature}
+                index={index}
                 isInView={isInView}
               />
             ))}
           </div>
         </div>
       </div>
+
+      {/* Bottom fade */}
+      <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white to-transparent" />
     </section>
   );
 }

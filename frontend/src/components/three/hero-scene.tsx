@@ -107,17 +107,22 @@ function GlowOrb({
   size: number;
 }) {
   const ref = useRef<THREE.Mesh>(null);
+  const phase = useMemo(() => Math.random() * Math.PI * 2, []);
 
   useFrame(({ clock }) => {
     if (!ref.current) return;
     const t = clock.getElapsedTime();
-    ref.current.scale.setScalar(size + Math.sin(t * 0.8) * size * 0.1);
+    // Multi-frequency breathing for organic feel
+    const breathe = 1 + Math.sin(t * 0.6 + phase) * 0.08 + Math.sin(t * 1.1 + phase * 0.7) * 0.04;
+    ref.current.scale.setScalar(size * breathe);
+    // Subtle position drift
+    ref.current.position.y = position[1] + Math.sin(t * 0.3 + phase) * 0.15;
   });
 
   return (
     <mesh ref={ref} position={position}>
       <sphereGeometry args={[1, 32, 32]} />
-      <meshBasicMaterial color={color} transparent opacity={0.08} />
+      <meshBasicMaterial color={color} transparent opacity={0.06} />
     </mesh>
   );
 }
@@ -176,12 +181,46 @@ export function HeroSceneContent({
       <CameraRig speed={speed} />
 
       {/* Softer fog — blends better with light hero section */}
-      <fog attach="fog" args={['#1a2e1a', 5, 20]} />
+      <fog attach="fog" args={['#0a1f0a', 8, 25]} />
 
-      {/* Lighting — warmer, more cinematic */}
-      <ambientLight intensity={0.35} color="#d1fae5" />
-      <directionalLight position={[5, 8, 3]} intensity={0.6} color="#fef9c3" />
-      <directionalLight position={[-3, 4, -5]} intensity={0.25} color="#bae6fd" />
+      {/* ===== CINEMATIC THREE-POINT LIGHTING ===== */}
+
+      {/* Ambient fill — very soft to preserve contrast */}
+      <ambientLight intensity={0.25} color="#e0f2e9" />
+
+      {/* Key light — warm golden hour sun */}
+      <directionalLight
+        position={[8, 12, 5]}
+        intensity={0.85}
+        color="#fff4e0"
+      />
+
+      {/* Fill light — cool sky bounce from opposite side */}
+      <directionalLight
+        position={[-5, 6, -3]}
+        intensity={0.3}
+        color="#c7e8ff"
+      />
+
+      {/* Rim light — emerald accent from behind/below for glow effect */}
+      <spotLight
+        position={[0, -3, 8]}
+        intensity={0.5}
+        color="#34d399"
+        angle={0.7}
+        penumbra={0.6}
+        distance={18}
+        decay={2}
+      />
+
+      {/* Top accent — subtle overhead fill */}
+      <pointLight
+        position={[0, 8, 0]}
+        intensity={0.2}
+        color="#fef9c3"
+        distance={15}
+        decay={2}
+      />
 
       {/* Floating plants at various depths */}
       {plants.map((plant, i) => (
@@ -204,10 +243,12 @@ export function HeroSceneContent({
         enableLeaves
       />
 
-      {/* Background glow orbs — subtler */}
-      <GlowOrb position={[-3, 2, -5]} color="#10b981" size={2.5} />
-      <GlowOrb position={[4, -1, -6]} color="#059669" size={3.0} />
-      <GlowOrb position={[0, 3, -7]} color="#34d399" size={3.5} />
+      {/* Background glow orbs — layered for depth */}
+      <GlowOrb position={[-4, 2.5, -6]} color="#10b981" size={3.0} />
+      <GlowOrb position={[5, -0.5, -8]} color="#059669" size={3.5} />
+      <GlowOrb position={[0, 4, -9]} color="#34d399" size={4.0} />
+      <GlowOrb position={[-2, -1, -4]} color="#6ee7b7" size={1.8} />
+      <GlowOrb position={[3, 3, -7]} color="#047857" size={2.2} />
 
       {/* Firefly accent lights */}
       <Fireflies count={6} />

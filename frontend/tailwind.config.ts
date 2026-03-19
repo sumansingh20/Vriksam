@@ -180,6 +180,13 @@ const config: Config = {
       },
       fontSize: {
         "2xs": ["0.625rem", { lineHeight: "0.875rem" }],
+        // Premium display typography
+        "display-2xl": ["4.5rem", { lineHeight: "1.05", letterSpacing: "-0.03em", fontWeight: "800" }],
+        "display-xl": ["3.75rem", { lineHeight: "1.1", letterSpacing: "-0.025em", fontWeight: "800" }],
+        "display-lg": ["3rem", { lineHeight: "1.15", letterSpacing: "-0.02em", fontWeight: "700" }],
+        "display-md": ["2.25rem", { lineHeight: "1.2", letterSpacing: "-0.015em", fontWeight: "700" }],
+        "display-sm": ["1.875rem", { lineHeight: "1.25", letterSpacing: "-0.01em", fontWeight: "600" }],
+        "display-xs": ["1.5rem", { lineHeight: "1.3", letterSpacing: "-0.01em", fontWeight: "600" }],
       },
       spacing: {
         "4.5": "1.125rem",
@@ -214,6 +221,20 @@ const config: Config = {
         "earth": "0 4px 14px 0 rgba(150, 105, 58, 0.15)",
         "elevated": "0 2px 8px rgba(0, 0, 0, 0.04), 0 8px 32px rgba(0, 0, 0, 0.08)",
         "elevated-lg": "0 4px 16px rgba(0, 0, 0, 0.06), 0 16px 64px rgba(0, 0, 0, 0.12)",
+        // Premium elevation system
+        "premium-xs": "0 1px 2px rgba(0, 0, 0, 0.03), 0 1px 3px rgba(0, 0, 0, 0.04)",
+        "premium-sm": "0 1px 2px rgba(0, 0, 0, 0.04), 0 2px 4px rgba(0, 0, 0, 0.04)",
+        "premium": "0 2px 4px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.06)",
+        "premium-md": "0 4px 8px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.08)",
+        "premium-lg": "0 8px 16px rgba(0, 0, 0, 0.06), 0 16px 48px rgba(0, 0, 0, 0.1)",
+        "premium-xl": "0 16px 32px rgba(0, 0, 0, 0.08), 0 32px 64px rgba(0, 0, 0, 0.12)",
+        // Emerald glow elevation
+        "emerald-soft": "0 2px 8px rgba(16, 185, 129, 0.08), 0 0 20px rgba(16, 185, 129, 0.04)",
+        "emerald-premium": "0 4px 14px rgba(16, 185, 129, 0.12), 0 0 40px rgba(16, 185, 129, 0.06)",
+        "emerald-premium-lg": "0 8px 30px rgba(16, 185, 129, 0.18), 0 0 60px rgba(16, 185, 129, 0.08)",
+        // Card interactive states
+        "card-hover": "0 8px 30px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(16, 185, 129, 0.04)",
+        "card-active": "0 4px 12px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
       },
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
@@ -223,6 +244,14 @@ const config: Config = {
         "canopy-gradient": "linear-gradient(180deg, #0c280f 0%, #236326 50%, #52b34d 100%)",
         "sunrise-gradient": "linear-gradient(135deg, #064e3b 0%, #059669 30%, #eab308 100%)",
         "nature-mesh": "radial-gradient(at 40% 20%, #d1fae5 0px, transparent 50%), radial-gradient(at 80% 0%, #ccfbf1 0px, transparent 50%), radial-gradient(at 0% 50%, #f0faf0 0px, transparent 50%), radial-gradient(at 80% 50%, #ecfdf5 0px, transparent 50%), radial-gradient(at 0% 100%, #d4f0d4 0px, transparent 50%)",
+        // Premium mesh gradients
+        "gradient-radial-soft": "radial-gradient(ellipse at center, var(--tw-gradient-stops))",
+        "gradient-mesh-premium": "radial-gradient(at 20% 30%, rgba(16,185,129,0.08) 0px, transparent 50%), radial-gradient(at 80% 20%, rgba(20,184,166,0.06) 0px, transparent 50%), radial-gradient(at 50% 70%, rgba(52,211,153,0.05) 0px, transparent 50%)",
+        "gradient-mesh-warm": "radial-gradient(at 0% 0%, rgba(254,240,138,0.15) 0px, transparent 50%), radial-gradient(at 100% 0%, rgba(16,185,129,0.1) 0px, transparent 50%), radial-gradient(at 50% 100%, rgba(209,250,229,0.2) 0px, transparent 50%)",
+        // Hero backgrounds
+        "hero-glow": "radial-gradient(ellipse 80% 50% at 50% -20%, rgba(16,185,129,0.15), transparent), radial-gradient(ellipse 60% 40% at 80% 50%, rgba(52,211,153,0.08), transparent)",
+        // Subtle noise texture (base64 encoded tiny noise)
+        "noise-subtle": "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E\")",
       },
       animation: {
         "float": "float 6s ease-in-out infinite",
@@ -377,6 +406,34 @@ const config: Config = {
           "-webkit-backdrop-filter": "blur(24px) saturate(180%)",
           border: "1px solid rgba(255, 255, 255, 0.12)",
           boxShadow: "0 8px 32px rgba(0, 0, 0, 0.06)",
+        },
+        // Premium glass variants
+        ".glass-premium": {
+          background: "rgba(255, 255, 255, 0.72)",
+          backdropFilter: "blur(20px) saturate(200%)",
+          "-webkit-backdrop-filter": "blur(20px) saturate(200%)",
+          border: "1px solid rgba(255, 255, 255, 0.6)",
+          boxShadow: "0 8px 32px rgba(0, 0, 0, 0.04), 0 0 1px rgba(16, 185, 129, 0.15)",
+        },
+        ".glass-frosted": {
+          background: "linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.7) 100%)",
+          backdropFilter: "blur(24px) saturate(180%)",
+          "-webkit-backdrop-filter": "blur(24px) saturate(180%)",
+          border: "1px solid rgba(255, 255, 255, 0.5)",
+          boxShadow: "inset 0 1px 0 0 rgba(255,255,255,0.6), 0 8px 40px rgba(0,0,0,0.05)",
+        },
+        ".glass-emerald-premium": {
+          background: "linear-gradient(135deg, rgba(16,185,129,0.08) 0%, rgba(5,150,105,0.04) 100%)",
+          backdropFilter: "blur(20px) saturate(180%)",
+          "-webkit-backdrop-filter": "blur(20px) saturate(180%)",
+          border: "1px solid rgba(16, 185, 129, 0.12)",
+          boxShadow: "0 0 40px rgba(16, 185, 129, 0.06)",
+        },
+        ".glass-subtle": {
+          background: "rgba(255, 255, 255, 0.5)",
+          backdropFilter: "blur(8px) saturate(150%)",
+          "-webkit-backdrop-filter": "blur(8px) saturate(150%)",
+          border: "1px solid rgba(255, 255, 255, 0.3)",
         },
         ".text-gradient-forest": {
           background: "linear-gradient(135deg, #0f6e0f, #10b981)",

@@ -1,5 +1,7 @@
 import { HeroSection } from '@/components/marketing/hero-section';
 import { StatsSection } from '@/components/marketing/stats-section';
+import { HowItWorksSection } from '@/components/marketing/how-it-works-section';
+import { BenefitsSection } from '@/components/marketing/benefits-section';
 import { MissionSection } from '@/components/marketing/mission-section';
 import { SolutionsSection } from '@/components/marketing/solutions-section';
 import { FeaturesGrid } from '@/components/marketing/features-grid';
@@ -16,22 +18,28 @@ export default function MarketingPage() {
       {/* 2. Social proof numbers — light, airy */}
       <StatsSection />
 
-      {/* 3. Why Vriksham — bento grid with brand pillars */}
+      {/* 3. How it works — step-by-step process */}
+      <HowItWorksSection />
+
+      {/* 4. Benefits — value propositions with stats */}
+      <BenefitsSection />
+
+      {/* 5. Why Vriksham — bento grid with brand pillars */}
       <MissionSection />
 
-      {/* 4. Solutions — tabbed vertical layout */}
+      {/* 6. Solutions — tabbed vertical layout */}
       <SolutionsSection />
 
-      {/* 5. Features — bento grid with varied card sizes */}
+      {/* 7. Features — bento grid with varied card sizes */}
       <FeaturesGrid />
 
-      {/* 6. Testimonials — large carousel */}
+      {/* 8. Testimonials — large carousel */}
       <TestimonialsSection />
 
-      {/* 7. Pricing — dark featured card */}
+      {/* 9. Pricing — dark featured card */}
       <PricingSection />
 
-      {/* 8. Final CTA — dark, minimal */}
+      {/* 10. Final CTA — dark, minimal */}
       <CTASection />
     </>
   );

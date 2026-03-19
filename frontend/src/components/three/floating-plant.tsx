@@ -82,12 +82,13 @@ function Leaf({ rotation, position, scale, color }: LeafProps) {
       new THREE.MeshStandardMaterial({
         color,
         side: THREE.DoubleSide,
-        roughness: 0.55,
-        metalness: 0.05,
-        emissive: new THREE.Color(color).multiplyScalar(0.15),
-        emissiveIntensity: 0.4,
+        roughness: 0.45,
+        metalness: 0.08,
+        emissive: new THREE.Color(color).multiplyScalar(0.12),
+        emissiveIntensity: 0.5,
         transparent: true,
-        opacity: 0.92,
+        opacity: 0.94,
+        envMapIntensity: 0.6,
       }),
     [color],
   );
@@ -167,21 +168,25 @@ export function FloatingPlant({
     return items;
   }, [config, leafColor]);
 
-  /* ---- Animation: gentle float + slow rotation ---- */
+  /* ---- Animation: organic multi-frequency float + natural sway ---- */
   useFrame(({ clock }) => {
     if (!groupRef.current) return;
     const t = clock.getElapsedTime() * speed;
 
-    // Floating bob
-    groupRef.current.position.y =
-      position[1] + Math.sin(t * 0.8 + phase) * 0.15 + Math.sin(t * 1.3 + phase * 0.7) * 0.06;
+    // Multi-frequency bobbing (more natural, less mechanical)
+    const primaryBob = Math.sin(t * 0.8 + phase) * 0.12;
+    const secondaryBob = Math.sin(t * 1.6 + phase * 1.3) * 0.04;
+    const tertiaryBob = Math.sin(t * 2.4 + phase * 0.7) * 0.015;
+    groupRef.current.position.y = position[1] + primaryBob + secondaryBob + tertiaryBob;
 
-    // Gentle rotation
-    groupRef.current.rotation.y = Math.sin(t * 0.3 + phase) * 0.15 + t * 0.05;
+    // Wind-sway effect with slight drift
+    groupRef.current.rotation.y = Math.sin(t * 0.25 + phase) * 0.12 + t * 0.03;
+    groupRef.current.rotation.z = Math.sin(t * 0.35 + phase * 1.2) * 0.04;
+    groupRef.current.rotation.x = Math.cos(t * 0.28 + phase * 0.9) * 0.025;
 
-    // Subtle sway
-    groupRef.current.rotation.z = Math.sin(t * 0.5 + phase * 1.2) * 0.03;
-    groupRef.current.rotation.x = Math.cos(t * 0.4 + phase * 0.8) * 0.02;
+    // Subtle breathing scale effect
+    const breathe = 1 + Math.sin(t * 0.5 + phase * 0.5) * 0.015;
+    groupRef.current.scale.setScalar(finalScale * breathe);
   });
 
   return (

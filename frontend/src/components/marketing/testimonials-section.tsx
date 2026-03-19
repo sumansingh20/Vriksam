@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
+import Image from 'next/image';
 import { motion, useInView, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { IMAGES } from '@/lib/images';
 
 /* -------------------------------------------------------------------------- */
 /*  Testimonials data                                                         */
@@ -16,6 +18,7 @@ const testimonials = [
     name: 'Rajesh Kumar',
     title: 'CTO, TechCorp India',
     initials: 'RK',
+    image: IMAGES.testimonials.avatars.rajesh,
   },
   {
     quote:
@@ -23,6 +26,7 @@ const testimonials = [
     name: 'Priya Sharma',
     title: 'Facilities Head, GreenSpaces',
     initials: 'PS',
+    image: IMAGES.testimonials.avatars.priya,
   },
   {
     quote:
@@ -30,6 +34,7 @@ const testimonials = [
     name: 'Anil Mehta',
     title: 'CEO, EcoBuilders',
     initials: 'AM',
+    image: IMAGES.testimonials.avatars.arjun,
   },
   {
     quote:
@@ -37,6 +42,7 @@ const testimonials = [
     name: 'Kavitha Rao',
     title: 'Sustainability Director, Prestige Group',
     initials: 'KR',
+    image: IMAGES.testimonials.avatars.meera,
   },
 ];
 
@@ -107,8 +113,14 @@ export function TestimonialsSection() {
               transition={{ duration: 0.3, delay: 0.1 }}
               className="mt-8 flex items-center gap-3"
             >
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-900 text-sm font-semibold text-white">
-                {t.initials}
+              <div className="relative h-12 w-12 overflow-hidden rounded-full ring-2 ring-emerald-100 ring-offset-2">
+                <Image
+                  src={t.image}
+                  alt={t.name}
+                  fill
+                  className="object-cover"
+                  sizes="48px"
+                />
               </div>
               <div className="text-left">
                 <p className="text-sm font-semibold text-gray-900">{t.name}</p>

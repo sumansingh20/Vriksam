@@ -185,32 +185,46 @@ const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
   ) => {
     const animatedValue = useAnimatedCounter(value);
 
+    // Determine gradient accent based on trend
+    const accentGradient = trend && trend > 0
+      ? 'from-emerald-500 via-green-500 to-teal-500'
+      : trend && trend < 0
+      ? 'from-red-400 via-rose-500 to-red-500'
+      : 'from-gray-300 via-gray-400 to-gray-500';
+
     return (
       <motion.div
         ref={ref}
         className={cn(
           "relative overflow-hidden rounded-2xl p-5",
-          /* Glassmorphism */
-          "bg-white/70 dark:bg-gray-900/50",
+          /* Premium glassmorphism */
+          "bg-white/80 dark:bg-gray-900/50",
           "backdrop-blur-xl backdrop-saturate-[1.8]",
-          "border border-white/40 dark:border-white/[0.08]",
-          "shadow-[0_8px_32px_rgba(0,0,0,0.04),0_2px_8px_rgba(16,185,129,0.04)]",
-          "hover:shadow-[0_16px_48px_rgba(0,0,0,0.06),0_4px_12px_rgba(16,185,129,0.08)]",
+          "border border-white/50 dark:border-white/[0.08]",
+          "shadow-premium hover:shadow-card-hover",
           "transition-all duration-300",
           className
         )}
-        whileHover={{ y: -3 }}
+        whileHover={{ y: -3, scale: 1.01 }}
         transition={{ type: "spring", stiffness: 300, damping: 20 }}
         {...props}
       >
-        {/* Gradient accent line at top */}
-        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-emerald-400/80 via-green-500/60 to-teal-400/40" />
+        {/* Subtle background pattern */}
+        <div className="absolute inset-0 opacity-[0.015] bg-noise-subtle pointer-events-none" />
+
+        {/* Gradient accent line at top - changes based on trend */}
+        <div className={cn(
+          "absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r",
+          accentGradient
+        )} />
+
         {/* Top row: icon + trend */}
-        <div className="flex items-start justify-between mb-3">
+        <div className="relative flex items-start justify-between mb-3">
           {icon && (
             <div
               className={cn(
                 "flex h-10 w-10 items-center justify-center rounded-xl",
+                "shadow-sm ring-1 ring-black/5",
                 iconBg,
                 iconColor
               )}
@@ -224,7 +238,7 @@ const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
         </div>
 
         {/* Value */}
-        <div className="flex items-baseline gap-1">
+        <div className="relative flex items-baseline gap-1">
           {prefix && (
             <span className="text-lg font-medium text-gray-500 dark:text-gray-400">
               {prefix}
@@ -241,13 +255,13 @@ const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
         </div>
 
         {/* Label */}
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+        <p className="relative mt-1 text-sm text-gray-500 dark:text-gray-400 font-medium">
           {label}
         </p>
 
-        {/* Sparkline */}
+        {/* Sparkline with enhanced styling */}
         {sparklineData && sparklineData.length > 1 && (
-          <div className="mt-3 -mx-1">
+          <div className="relative mt-4 -mx-1">
             <Sparkline data={sparklineData} color={sparklineColor} />
           </div>
         )}
