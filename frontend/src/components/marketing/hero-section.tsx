@@ -3,8 +3,8 @@
 import { useRef, useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { motion, useScroll, useTransform, useSpring, useMotionValue, useAnimationFrame } from 'framer-motion';
-import { ArrowRight, Play, Leaf, Sparkles, TrendingUp, Shield, Zap } from 'lucide-react';
+import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
+import { ArrowRight, Play, Leaf, Sparkles, TrendingUp, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { IMAGES, BLUR_DATA_URL } from '@/lib/images';
 
