@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect, useState } from 'react';
+import { useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
@@ -170,43 +170,11 @@ function StatBadge({
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Animated counter                                                           */
-/* -------------------------------------------------------------------------- */
-
-function useCounter(end: number, duration: number = 2000, start: boolean = true) {
-  const [count, setCount] = useState(0);
-
-  useEffect(() => {
-    if (!start) return;
-
-    let startTime: number;
-    let animationFrame: number;
-
-    const animate = (timestamp: number) => {
-      if (!startTime) startTime = timestamp;
-      const progress = Math.min((timestamp - startTime) / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      setCount(Math.floor(end * eased));
-
-      if (progress < 1) {
-        animationFrame = requestAnimationFrame(animate);
-      }
-    };
-
-    animationFrame = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(animationFrame);
-  }, [end, duration, start]);
-
-  return count;
-}
-
-/* -------------------------------------------------------------------------- */
 /*  Hero Section                                                               */
 /* -------------------------------------------------------------------------- */
 
 export function HeroSection() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [isLoaded, setIsLoaded] = useState(false);
 
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -223,10 +191,6 @@ export function HeroSection() {
   const smoothScale = useSpring(scale, { stiffness: 80, damping: 20 });
   const smoothImageY = useSpring(imageY, { stiffness: 80, damping: 20 });
   const smoothImageScale = useSpring(imageScale, { stiffness: 80, damping: 20 });
-
-  useEffect(() => {
-    setIsLoaded(true);
-  }, []);
 
   return (
     <section

@@ -45,55 +45,6 @@ const VARIANT_CONFIG: Record<
 };
 
 /* -------------------------------------------------------------------------- */
-/*  Premium leaf shaders for realistic look                                    */
-/* -------------------------------------------------------------------------- */
-
-const leafVertexShader = `
-  varying vec2 vUv;
-  varying vec3 vNormal;
-  varying vec3 vPosition;
-
-  void main() {
-    vUv = uv;
-    vNormal = normalize(normalMatrix * normal);
-    vPosition = position;
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-  }
-`;
-
-const leafFragmentShader = `
-  uniform vec3 uColor;
-  uniform float uTime;
-  varying vec2 vUv;
-  varying vec3 vNormal;
-  varying vec3 vPosition;
-
-  void main() {
-    // Subsurface scattering simulation
-    float sss = pow(max(0.0, dot(vNormal, vec3(0.0, 1.0, 0.5))), 2.0) * 0.3;
-
-    // Vein pattern
-    float vein = smoothstep(0.48, 0.52, abs(vUv.x - 0.5));
-    vein *= sin(vUv.y * 15.0) * 0.5 + 0.5;
-
-    // Color variation
-    vec3 baseColor = uColor;
-    vec3 tipColor = uColor * 0.8;
-    vec3 color = mix(baseColor, tipColor, vUv.y);
-
-    // Add subtle variation
-    color += sss * vec3(0.2, 0.4, 0.1);
-    color = mix(color, color * 0.85, vein * 0.3);
-
-    // Fresnel rim lighting
-    float fresnel = pow(1.0 - max(0.0, dot(vNormal, vec3(0.0, 0.0, 1.0))), 3.0);
-    color += fresnel * vec3(0.1, 0.2, 0.1);
-
-    gl_FragColor = vec4(color, 0.95);
-  }
-`;
-
-/* -------------------------------------------------------------------------- */
 /*  Leaf geometry generators                                                   */
 /* -------------------------------------------------------------------------- */
 

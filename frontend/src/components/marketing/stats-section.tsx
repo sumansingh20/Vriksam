@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useEffect, useState, useCallback } from 'react';
-import { motion, useInView, useSpring, useTransform } from 'framer-motion';
+import { motion, useInView } from 'framer-motion';
 import { Sprout, Building2, MapPin, Wind, TrendingUp, Leaf } from 'lucide-react';
 import { cn } from '@/lib/utils';
 

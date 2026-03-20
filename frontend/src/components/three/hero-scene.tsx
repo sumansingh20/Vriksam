@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useRef, Suspense } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { FloatingPlant } from './floating-plant';
