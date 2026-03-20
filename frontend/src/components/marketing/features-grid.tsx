@@ -14,9 +14,10 @@ import {
   Shield,
   Zap,
   ArrowUpRight,
+  Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { IMAGES } from '@/lib/images';
+import { IMAGES, BLUR_DATA_URL } from '@/lib/images';
 
 /* -------------------------------------------------------------------------- */
 /*  Feature data                                                              */
@@ -26,11 +27,12 @@ const features = [
   {
     icon: Brain,
     title: 'AI Health Monitoring',
-    description: 'Computer vision detects plant issues before they become visible. Our AI analyzes growth patterns, leaf color, and environmental stress.',
+    description: 'Computer vision detects plant issues before they become visible. Our AI analyzes growth patterns, leaf color, and environmental stress in real-time.',
     image: IMAGES.features.aiHealth,
     span: 'lg:col-span-2 lg:row-span-2',
     size: 'large',
     color: 'emerald',
+    tags: ['Real-time alerts', 'Disease detection', 'Growth tracking'],
   },
   {
     icon: BarChart3,
@@ -53,7 +55,7 @@ const features = [
   {
     icon: FileBarChart,
     title: 'ESG Reporting',
-    description: 'Board-ready sustainability reports generated automatically.',
+    description: 'Board-ready sustainability reports generated automatically with verified metrics.',
     span: 'lg:col-span-1 lg:row-span-1',
     size: 'small',
     color: 'green',
@@ -61,7 +63,7 @@ const features = [
   {
     icon: Package,
     title: 'Inventory Management',
-    description: 'Track every plant, pot, and tool across all your locations.',
+    description: 'Track every plant, pot, and tool across all your locations effortlessly.',
     span: 'lg:col-span-1 lg:row-span-1',
     size: 'small',
     color: 'orange',
@@ -69,7 +71,7 @@ const features = [
   {
     icon: Users,
     title: 'Team Coordination',
-    description: 'Keep everyone aligned with real-time task updates.',
+    description: 'Keep everyone aligned with real-time task updates and notifications.',
     span: 'lg:col-span-1 lg:row-span-1',
     size: 'small',
     color: 'pink',
@@ -77,7 +79,7 @@ const features = [
   {
     icon: Wifi,
     title: 'IoT Integration',
-    description: 'Connect sensors for fully automated monitoring.',
+    description: 'Connect sensors for fully automated environmental monitoring.',
     span: 'lg:col-span-1 lg:row-span-1',
     size: 'small',
     color: 'teal',
@@ -85,7 +87,7 @@ const features = [
   {
     icon: Shield,
     title: 'Enterprise Security',
-    description: 'Bank-level encryption and compliance certifications.',
+    description: 'Bank-level encryption and compliance certifications included.',
     span: 'lg:col-span-1 lg:row-span-1',
     size: 'small',
     color: 'gray',
@@ -94,57 +96,65 @@ const features = [
 
 const colorMap = {
   emerald: {
-    bg: 'bg-emerald-50' as const,
-    text: 'text-emerald-600' as const,
-    border: 'border-emerald-100' as const,
-    gradient: 'from-emerald-500 to-teal-500' as const,
+    bg: 'bg-emerald-50',
+    text: 'text-emerald-600',
+    border: 'border-emerald-100',
+    gradient: 'from-emerald-500 to-teal-500',
+    glow: 'group-hover:shadow-emerald-500/20',
   },
   blue: {
-    bg: 'bg-blue-50' as const,
-    text: 'text-blue-600' as const,
-    border: 'border-blue-100' as const,
-    gradient: 'from-blue-500 to-indigo-500' as const,
+    bg: 'bg-blue-50',
+    text: 'text-blue-600',
+    border: 'border-blue-100',
+    gradient: 'from-blue-500 to-indigo-500',
+    glow: 'group-hover:shadow-blue-500/20',
   },
   purple: {
-    bg: 'bg-purple-50' as const,
-    text: 'text-purple-600' as const,
-    border: 'border-purple-100' as const,
-    gradient: 'from-purple-500 to-pink-500' as const,
+    bg: 'bg-purple-50',
+    text: 'text-purple-600',
+    border: 'border-purple-100',
+    gradient: 'from-purple-500 to-pink-500',
+    glow: 'group-hover:shadow-purple-500/20',
   },
   green: {
-    bg: 'bg-green-50' as const,
-    text: 'text-green-600' as const,
-    border: 'border-green-100' as const,
-    gradient: 'from-green-500 to-emerald-500' as const,
+    bg: 'bg-green-50',
+    text: 'text-green-600',
+    border: 'border-green-100',
+    gradient: 'from-green-500 to-emerald-500',
+    glow: 'group-hover:shadow-green-500/20',
   },
   orange: {
-    bg: 'bg-orange-50' as const,
-    text: 'text-orange-600' as const,
-    border: 'border-orange-100' as const,
-    gradient: 'from-orange-500 to-amber-500' as const,
+    bg: 'bg-orange-50',
+    text: 'text-orange-600',
+    border: 'border-orange-100',
+    gradient: 'from-orange-500 to-amber-500',
+    glow: 'group-hover:shadow-orange-500/20',
   },
   pink: {
-    bg: 'bg-pink-50' as const,
-    text: 'text-pink-600' as const,
-    border: 'border-pink-100' as const,
-    gradient: 'from-pink-500 to-rose-500' as const,
+    bg: 'bg-pink-50',
+    text: 'text-pink-600',
+    border: 'border-pink-100',
+    gradient: 'from-pink-500 to-rose-500',
+    glow: 'group-hover:shadow-pink-500/20',
   },
   teal: {
-    bg: 'bg-teal-50' as const,
-    text: 'text-teal-600' as const,
-    border: 'border-teal-100' as const,
-    gradient: 'from-teal-500 to-cyan-500' as const,
+    bg: 'bg-teal-50',
+    text: 'text-teal-600',
+    border: 'border-teal-100',
+    gradient: 'from-teal-500 to-cyan-500',
+    glow: 'group-hover:shadow-teal-500/20',
   },
   gray: {
-    bg: 'bg-gray-100' as const,
-    text: 'text-gray-600' as const,
-    border: 'border-gray-200' as const,
-    gradient: 'from-gray-600 to-gray-700' as const,
+    bg: 'bg-gray-100',
+    text: 'text-gray-600',
+    border: 'border-gray-200',
+    gradient: 'from-gray-600 to-gray-700',
+    glow: 'group-hover:shadow-gray-500/20',
   },
 } as const;
 
 /* -------------------------------------------------------------------------- */
-/*  Feature Card                                                              */
+/*  Premium Feature Card                                                       */
 /* -------------------------------------------------------------------------- */
 
 interface FeatureCardProps {
@@ -161,24 +171,26 @@ function FeatureCard({ feature, index, isInView }: FeatureCardProps) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 24 }}
-      animate={isInView ? { opacity: 1, y: 0 } : {}}
+      initial={{ opacity: 0, y: 40, filter: 'blur(10px)' }}
+      animate={isInView ? { opacity: 1, y: 0, filter: 'blur(0px)' } : {}}
       transition={{
-        duration: 0.6,
+        duration: 0.7,
         delay: index * 0.08,
         ease: [0.22, 1, 0.36, 1],
       }}
       className={cn(feature.span, 'group relative')}
     >
       <motion.div
-        whileHover={{ y: -4 }}
+        whileHover={{ y: -6 }}
         transition={{ type: 'spring', stiffness: 300, damping: 20 }}
         className={cn(
           'relative h-full overflow-hidden rounded-3xl',
-          'bg-white border border-gray-100',
-          'hover:border-gray-200 hover:shadow-xl hover:shadow-gray-100/80',
+          'bg-white/80 backdrop-blur-xl',
+          'border border-gray-100/80',
+          'hover:border-gray-200 hover:shadow-2xl',
+          colors.glow,
           'transition-all duration-500',
-          isLarge ? 'min-h-[400px] lg:min-h-[480px]' : 'min-h-[200px]',
+          isLarge ? 'min-h-[420px] lg:min-h-[500px]' : 'min-h-[220px]',
         )}
       >
         {/* Background image for large cards */}
@@ -188,38 +200,54 @@ function FeatureCard({ feature, index, isInView }: FeatureCardProps) {
               src={feature.image!}
               alt={feature.title}
               fill
-              className="object-cover opacity-10 group-hover:opacity-15 transition-opacity duration-500"
+              className="object-cover opacity-[0.08] group-hover:opacity-[0.12] group-hover:scale-105 transition-all duration-700"
               sizes="(max-width: 768px) 100vw, 50vw"
+              placeholder="blur"
+              blurDataURL={BLUR_DATA_URL}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-white via-white/95 to-white/80" />
+            <div className="absolute inset-0 bg-gradient-to-t from-white via-white/95 to-white/85" />
           </div>
         )}
 
+        {/* Hover gradient overlay */}
+        <div className={cn(
+          'absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500',
+          'bg-gradient-to-br',
+          colors.gradient,
+        )} style={{ opacity: 0.03 }} />
+
         {/* Content */}
         <div className={cn(
-          'relative z-10 flex flex-col h-full p-6 lg:p-8',
+          'relative z-10 flex flex-col h-full p-7 lg:p-9',
           isLarge && 'justify-between',
         )}>
           {/* Header */}
           <div>
-            {/* Icon */}
+            {/* Icon with gradient background */}
             <motion.div
-              whileHover={{ scale: 1.05, rotate: 5 }}
+              whileHover={{ scale: 1.1, rotate: 5 }}
               transition={{ type: 'spring', stiffness: 400, damping: 17 }}
-              className={cn(
-                'inline-flex items-center justify-center rounded-2xl',
-                'ring-1',
-                colors.bg,
-                colors.border,
-                isLarge ? 'w-14 h-14 mb-6' : 'w-11 h-11 mb-4',
-              )}
+              className="relative inline-flex"
             >
-              <Icon className={cn(colors.text, isLarge ? 'w-6 h-6' : 'w-5 h-5')} strokeWidth={1.5} />
+              <div className={cn(
+                'flex items-center justify-center rounded-2xl',
+                'bg-gradient-to-br shadow-lg',
+                colors.gradient,
+                isLarge ? 'w-16 h-16 mb-8' : 'w-12 h-12 mb-5',
+              )}>
+                <Icon className={cn('text-white', isLarge ? 'w-7 h-7' : 'w-5 h-5')} strokeWidth={1.5} />
+              </div>
+              {/* Glow effect */}
+              <div className={cn(
+                'absolute inset-0 rounded-2xl blur-xl opacity-40',
+                'bg-gradient-to-br',
+                colors.gradient,
+              )} />
             </motion.div>
 
             {/* Title */}
             <h3 className={cn(
-              'font-display font-semibold text-gray-900',
+              'font-display font-bold text-gray-900',
               isLarge ? 'text-2xl lg:text-3xl' : 'text-lg',
             )}>
               {feature.title}
@@ -235,40 +263,54 @@ function FeatureCard({ feature, index, isInView }: FeatureCardProps) {
           </div>
 
           {/* Large card extras */}
-          {isLarge && (
+          {isLarge && feature.tags && (
             <div className="mt-8">
-              {/* Feature highlights */}
+              {/* Feature tags */}
               <div className="flex flex-wrap gap-2">
-                {['Real-time alerts', 'Disease detection', 'Growth tracking'].map((tag) => (
-                  <span
+                {feature.tags.map((tag) => (
+                  <motion.span
                     key={tag}
-                    className="inline-flex items-center px-3 py-1.5 rounded-full bg-gray-100 text-xs font-medium text-gray-600"
+                    whileHover={{ scale: 1.05 }}
+                    className={cn(
+                      'inline-flex items-center px-4 py-2 rounded-full',
+                      'bg-gradient-to-r from-gray-50 to-gray-100/80',
+                      'border border-gray-100',
+                      'text-xs font-semibold text-gray-700',
+                      'hover:border-emerald-200 hover:from-emerald-50 hover:to-teal-50',
+                      'transition-all duration-300',
+                    )}
                   >
-                    <Zap className="w-3 h-3 mr-1.5" />
+                    <Sparkles className="w-3 h-3 mr-2 text-emerald-500" />
                     {tag}
-                  </span>
+                  </motion.span>
                 ))}
               </div>
             </div>
           )}
 
           {/* Hover arrow */}
-          <div className="absolute top-6 right-6 lg:top-8 lg:right-8">
-            <ArrowUpRight className="w-5 h-5 text-gray-300 group-hover:text-gray-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-300" />
-          </div>
+          <motion.div
+            initial={{ opacity: 0.3, x: 0, y: 0 }}
+            whileHover={{ opacity: 1, x: 2, y: -2 }}
+            className="absolute top-7 right-7 lg:top-9 lg:right-9"
+          >
+            <ArrowUpRight className="w-5 h-5 text-gray-300 group-hover:text-gray-500 transition-colors duration-300" />
+          </motion.div>
         </div>
 
-        {/* Gradient border on hover */}
-        <div
-          className={cn(
-            'absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500',
-            'ring-2 ring-inset',
-            `ring-gradient-to-br ${colors.gradient}`,
-          )}
-          style={{
-            background: `linear-gradient(135deg, ${colors.bg.replace('bg-', '')}00 0%, ${colors.bg.replace('bg-', '')}10 100%)`,
-          }}
-        />
+        {/* Animated border gradient on hover */}
+        <div className={cn(
+          'absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500',
+          'ring-2 ring-inset ring-transparent',
+        )}>
+          <div className={cn(
+            'absolute inset-0 rounded-3xl',
+            'bg-gradient-to-r p-[1px]',
+            colors.gradient,
+          )} style={{ opacity: 0.3 }}>
+            <div className="w-full h-full bg-white rounded-3xl" />
+          </div>
+        </div>
       </motion.div>
     </motion.div>
   );
@@ -283,44 +325,63 @@ export function FeaturesGrid() {
   const isInView = useInView(sectionRef, { once: true, margin: '-100px' });
 
   return (
-    <section ref={sectionRef} className="relative py-24 sm:py-32 overflow-hidden">
+    <section ref={sectionRef} className="relative py-28 sm:py-36 overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0 bg-[#FAFBFC]" />
 
-      {/* Subtle pattern */}
+      {/* Decorative elements */}
+      <div className="absolute top-20 -left-20 w-96 h-96 bg-emerald-100/30 rounded-full blur-3xl" />
+      <div className="absolute bottom-20 -right-20 w-96 h-96 bg-teal-100/30 rounded-full blur-3xl" />
+
+      {/* Subtle grid pattern */}
       <div
-        className="absolute inset-0 opacity-[0.3]"
+        className="absolute inset-0 opacity-[0.4]"
         style={{
-          backgroundImage: `radial-gradient(circle at 1px 1px, rgba(0,0,0,0.03) 1px, transparent 0)`,
-          backgroundSize: '24px 24px',
+          backgroundImage: `radial-gradient(circle at 1px 1px, rgba(16, 185, 129, 0.04) 1px, transparent 0)`,
+          backgroundSize: '32px 32px',
         }}
       />
 
       <div className="relative max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
         {/* Section header */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          className="text-center mb-16"
+          initial={{ opacity: 0, y: 30, filter: 'blur(10px)' }}
+          animate={isInView ? { opacity: 1, y: 0, filter: 'blur(0px)' } : {}}
+          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+          className="text-center mb-20"
         >
-          <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white border border-gray-200 text-sm font-medium text-gray-600">
+          <motion.span
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={isInView ? { opacity: 1, scale: 1 } : {}}
+            transition={{ duration: 0.5 }}
+            className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-white border border-gray-200 shadow-sm text-sm font-medium text-gray-600"
+          >
             <Zap className="w-4 h-4 text-emerald-500" />
             Platform Features
-          </span>
-          <h2 className="mt-6 font-display text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-gray-900">
+          </motion.span>
+
+          <h2 className="mt-8 font-display text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900">
             Everything you need to{' '}
-            <span className="bg-gradient-to-r from-emerald-600 via-green-500 to-teal-500 bg-clip-text text-transparent">
-              grow
+            <span className="relative inline-block">
+              <span className="relative z-10 bg-gradient-to-r from-emerald-600 via-teal-500 to-green-500 bg-clip-text text-transparent">
+                grow
+              </span>
+              <motion.span
+                initial={{ scaleX: 0 }}
+                animate={isInView ? { scaleX: 1 } : {}}
+                transition={{ delay: 0.5, duration: 0.6 }}
+                className="absolute -bottom-2 left-0 right-0 h-3 bg-emerald-100/70 -z-0 origin-left rounded-full"
+              />
             </span>
           </h2>
-          <p className="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">
+
+          <p className="mt-6 text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto">
             Powerful tools designed to help you manage, monitor, and scale your green infrastructure with ease.
           </p>
         </motion.div>
 
-        {/* Bento grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+        {/* Premium Bento grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-6">
           {features.map((feature, index) => (
             <FeatureCard
               key={feature.title}

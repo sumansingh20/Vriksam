@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useRef } from 'react';
+import React, { useMemo, useRef, Suspense } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { FloatingPlant } from './floating-plant';
@@ -11,30 +11,42 @@ import { ParticleField } from './particle-field';
 /* -------------------------------------------------------------------------- */
 
 interface HeroSceneContentProps {
-  /** Number of floating plants (default: 7) */
+  /** Number of floating plants (default: 9) */
   plantCount?: number;
-  /** Particle count (default: 350, kept low for perf) */
+  /** Particle count (default: 400) */
   particleCount?: number;
   /** Overall scene speed multiplier */
   speed?: number;
+  /** Enable cinematic camera movement */
+  enableCameraMovement?: boolean;
+  /** Quality preset */
+  quality?: 'low' | 'medium' | 'high';
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Slow-orbiting camera rig                                                  */
+/*  Smooth cinematic camera rig                                                */
 /* -------------------------------------------------------------------------- */
 
-function CameraRig({ speed }: { speed: number }) {
+function CameraRig({ speed, enabled }: { speed: number; enabled: boolean }) {
   const { camera } = useThree();
   const target = useMemo(() => new THREE.Vector3(0, 0, 0), []);
+  const smoothPosition = useRef(new THREE.Vector3(8, 1.5, 8));
 
   useFrame(({ clock }) => {
-    const t = clock.getElapsedTime() * speed;
-    const radius = 8;
-    const x = Math.sin(t * 0.08) * radius;
-    const z = Math.cos(t * 0.08) * radius;
-    const y = 1.5 + Math.sin(t * 0.05) * 0.5;
+    if (!enabled) return;
 
-    camera.position.set(x, y, z);
+    const t = clock.getElapsedTime() * speed;
+    const radius = 9;
+
+    // Smooth figure-8 path for more interesting movement
+    const targetX = Math.sin(t * 0.06) * radius;
+    const targetZ = Math.cos(t * 0.06) * radius;
+    const targetY = 1.8 + Math.sin(t * 0.04) * 0.8;
+
+    // Smooth interpolation
+    smoothPosition.current.lerp(new THREE.Vector3(targetX, targetY, targetZ), 0.01);
+
+    camera.position.copy(smoothPosition.current);
     camera.lookAt(target);
   });
 
@@ -42,23 +54,26 @@ function CameraRig({ speed }: { speed: number }) {
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Ambient firefly lights                                                    */
+/*  Atmospheric firefly lights                                                 */
 /* -------------------------------------------------------------------------- */
 
-function Fireflies({ count = 5 }: { count?: number }) {
+function Fireflies({ count = 8 }: { count?: number }) {
   const groupRef = useRef<THREE.Group>(null);
 
   const lights = useMemo(() => {
-    const items: { offset: THREE.Vector3; phase: number; speed: number }[] = [];
+    const items: { offset: THREE.Vector3; phase: number; speed: number; color: string }[] = [];
+    const colors = ['#86efac', '#4ade80', '#34d399', '#a7f3d0', '#6ee7b7'];
+
     for (let i = 0; i < count; i++) {
       items.push({
         offset: new THREE.Vector3(
-          (Math.random() - 0.5) * 8,
-          Math.random() * 3 - 0.5,
-          (Math.random() - 0.5) * 8,
+          (Math.random() - 0.5) * 10,
+          Math.random() * 4 - 1,
+          (Math.random() - 0.5) * 10,
         ),
         phase: Math.random() * Math.PI * 2,
-        speed: 0.3 + Math.random() * 0.4,
+        speed: 0.2 + Math.random() * 0.4,
+        color: colors[i % colors.length] ?? '#86efac',
       });
     }
     return items;
@@ -67,25 +82,32 @@ function Fireflies({ count = 5 }: { count?: number }) {
   useFrame(({ clock }) => {
     if (!groupRef.current) return;
     const t = clock.getElapsedTime();
+
     groupRef.current.children.forEach((child, i) => {
       const cfg = lights[i];
       if (!cfg) return;
-      child.position.set(
-        cfg.offset.x + Math.sin(t * cfg.speed + cfg.phase) * 1.5,
-        cfg.offset.y + Math.sin(t * cfg.speed * 0.7 + cfg.phase * 1.3) * 0.8,
-        cfg.offset.z + Math.cos(t * cfg.speed * 0.5 + cfg.phase) * 1.2,
-      );
+
+      // Complex path for more natural firefly movement
+      const x = cfg.offset.x + Math.sin(t * cfg.speed + cfg.phase) * 2 + Math.sin(t * cfg.speed * 2.3) * 0.5;
+      const y = cfg.offset.y + Math.sin(t * cfg.speed * 0.7 + cfg.phase * 1.3) * 1 + Math.cos(t * cfg.speed * 1.5) * 0.3;
+      const z = cfg.offset.z + Math.cos(t * cfg.speed * 0.5 + cfg.phase) * 1.5;
+
+      child.position.set(x, y, z);
+
+      // Pulsing intensity
+      const intensity = 0.1 + Math.sin(t * 3 + cfg.phase) * 0.05;
+      (child as THREE.PointLight).intensity = intensity;
     });
   });
 
   return (
     <group ref={groupRef}>
-      {lights.map((_, i) => (
+      {lights.map((cfg, i) => (
         <pointLight
           key={i}
-          color="#86efac"
-          intensity={0.12}
-          distance={4}
+          color={cfg.color}
+          intensity={0.15}
+          distance={5}
           decay={2}
         />
       ))}
@@ -94,46 +116,109 @@ function Fireflies({ count = 5 }: { count?: number }) {
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Glowing background orbs for depth                                         */
+/*  Atmospheric glow orbs for depth                                            */
 /* -------------------------------------------------------------------------- */
 
 function GlowOrb({
   position,
   color,
   size,
+  pulseSpeed = 1,
 }: {
   position: [number, number, number];
   color: string;
   size: number;
+  pulseSpeed?: number;
 }) {
   const ref = useRef<THREE.Mesh>(null);
   const phase = useMemo(() => Math.random() * Math.PI * 2, []);
 
   useFrame(({ clock }) => {
     if (!ref.current) return;
-    const t = clock.getElapsedTime();
+    const t = clock.getElapsedTime() * pulseSpeed;
+
     // Multi-frequency breathing for organic feel
-    const breathe = 1 + Math.sin(t * 0.6 + phase) * 0.08 + Math.sin(t * 1.1 + phase * 0.7) * 0.04;
+    const breathe = 1 +
+      Math.sin(t * 0.5 + phase) * 0.1 +
+      Math.sin(t * 0.9 + phase * 0.7) * 0.05 +
+      Math.sin(t * 1.3 + phase * 1.2) * 0.025;
+
     ref.current.scale.setScalar(size * breathe);
+
     // Subtle position drift
-    ref.current.position.y = position[1] + Math.sin(t * 0.3 + phase) * 0.15;
+    ref.current.position.y = position[1] + Math.sin(t * 0.25 + phase) * 0.2;
+    ref.current.position.x = position[0] + Math.sin(t * 0.2 + phase * 1.5) * 0.1;
   });
 
   return (
     <mesh ref={ref} position={position}>
       <sphereGeometry args={[1, 32, 32]} />
-      <meshBasicMaterial color={color} transparent opacity={0.06} />
+      <meshBasicMaterial color={color} transparent opacity={0.08} />
     </mesh>
   );
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Plant arrangement generator                                               */
+/*  Floating sparkle particles                                                 */
+/* -------------------------------------------------------------------------- */
+
+function SparkleParticles({ count = 50 }: { count?: number }) {
+  const pointsRef = useRef<THREE.Points>(null);
+
+  const [positions, sizes] = useMemo(() => {
+    const pos = new Float32Array(count * 3);
+    const sz = new Float32Array(count);
+
+    for (let i = 0; i < count; i++) {
+      pos[i * 3] = (Math.random() - 0.5) * 15;
+      pos[i * 3 + 1] = (Math.random() - 0.5) * 8;
+      pos[i * 3 + 2] = (Math.random() - 0.5) * 15;
+      sz[i] = Math.random() * 0.02 + 0.01;
+    }
+
+    return [pos, sz];
+  }, [count]);
+
+  const geometry = useMemo(() => {
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geo.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+    return geo;
+  }, [positions, sizes]);
+
+  useFrame(({ clock }) => {
+    if (!pointsRef.current) return;
+    const t = clock.getElapsedTime();
+
+    // Rotate slowly
+    pointsRef.current.rotation.y = t * 0.02;
+
+    // Pulse opacity
+    const material = pointsRef.current.material as THREE.PointsMaterial;
+    material.opacity = 0.5 + Math.sin(t * 2) * 0.2;
+  });
+
+  return (
+    <points ref={pointsRef} geometry={geometry}>
+      <pointsMaterial
+        color="#a7f3d0"
+        size={0.03}
+        transparent
+        opacity={0.6}
+        sizeAttenuation
+        blending={THREE.AdditiveBlending}
+      />
+    </points>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Plant arrangement generator - improved distribution                        */
 /* -------------------------------------------------------------------------- */
 
 interface PlantConfig {
   position: [number, number, number];
-  variant: 'small' | 'medium' | 'large';
+  variant: 'small' | 'medium' | 'large' | 'monstera' | 'fern';
   phase: number;
   speed: number;
   leafColor: string;
@@ -141,23 +226,34 @@ interface PlantConfig {
 
 function generatePlants(count: number): PlantConfig[] {
   const plants: PlantConfig[] = [];
-  const variants: ('small' | 'medium' | 'large')[] = ['small', 'medium', 'large'];
-  const greens = ['#22c55e', '#16a34a', '#4ade80', '#86efac', '#10b981'];
+  const variants: ('small' | 'medium' | 'large' | 'monstera' | 'fern')[] = ['small', 'medium', 'large', 'monstera', 'fern'];
+  const greens = [
+    '#22c55e', // emerald-500
+    '#16a34a', // green-600
+    '#4ade80', // green-400
+    '#10b981', // emerald-500
+    '#059669', // emerald-600
+    '#34d399', // emerald-400
+    '#86efac', // green-300
+  ];
+
+  // Use golden angle for natural phyllotaxis distribution
+  const goldenAngle = Math.PI * (3 - Math.sqrt(5));
 
   for (let i = 0; i < count; i++) {
-    const angle = (i / count) * Math.PI * 2 + Math.random() * 0.5;
-    const radius = 1.5 + Math.random() * 3;
-    const depthLayer = Math.random();
+    const angle = i * goldenAngle + Math.random() * 0.3;
+    const radius = 1.5 + Math.sqrt(i / count) * 3.5;
+    const depthVariation = Math.random() * 0.4;
 
     plants.push({
       position: [
         Math.cos(angle) * radius,
-        (Math.random() - 0.5) * 2,
-        Math.sin(angle) * radius - depthLayer * 3,
+        (Math.random() - 0.5) * 2.5,
+        Math.sin(angle) * radius - depthVariation * 4,
       ],
-      variant: variants[i % 3] ?? 'medium',
-      phase: i * 1.1,
-      speed: 0.6 + Math.random() * 0.6,
+      variant: variants[i % variants.length] ?? 'medium',
+      phase: i * 1.3 + Math.random() * 0.5,
+      speed: 0.5 + Math.random() * 0.5,
       leafColor: greens[i % greens.length] ?? '#22c55e',
     });
   }
@@ -165,64 +261,84 @@ function generatePlants(count: number): PlantConfig[] {
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Hero Scene Content (renders inside a <Scene> Canvas)                      */
+/*  Hero Scene Content                                                         */
 /* -------------------------------------------------------------------------- */
 
 export function HeroSceneContent({
-  plantCount = 7,
-  particleCount = 350,
+  plantCount = 9,
+  particleCount = 400,
   speed = 1,
+  enableCameraMovement = true,
+  quality = 'high',
 }: HeroSceneContentProps) {
   const plants = useMemo(() => generatePlants(plantCount), [plantCount]);
 
+  const qualitySettings = {
+    low: { particleMultiplier: 0.5, glowOrbCount: 3, fireflyCount: 4 },
+    medium: { particleMultiplier: 0.75, glowOrbCount: 5, fireflyCount: 6 },
+    high: { particleMultiplier: 1, glowOrbCount: 7, fireflyCount: 8 },
+  };
+
+  const settings = qualitySettings[quality];
+
   return (
     <group>
-      {/* Camera rig for slow orbit */}
-      <CameraRig speed={speed} />
+      {/* Camera rig */}
+      <CameraRig speed={speed} enabled={enableCameraMovement} />
 
-      {/* Softer fog — blends better with light hero section */}
-      <fog attach="fog" args={['#0a1f0a', 8, 25]} />
+      {/* Atmospheric fog - softer for dreamy effect */}
+      <fog attach="fog" args={['#0d251a', 6, 28]} />
 
-      {/* ===== CINEMATIC THREE-POINT LIGHTING ===== */}
+      {/* ===== PREMIUM CINEMATIC LIGHTING ===== */}
 
-      {/* Ambient fill — very soft to preserve contrast */}
-      <ambientLight intensity={0.25} color="#e0f2e9" />
+      {/* Ambient fill - soft base illumination */}
+      <ambientLight intensity={0.2} color="#d1fae5" />
 
-      {/* Key light — warm golden hour sun */}
+      {/* Key light - warm golden hour sun from above-right */}
       <directionalLight
-        position={[8, 12, 5]}
-        intensity={0.85}
-        color="#fff4e0"
+        position={[10, 15, 8]}
+        intensity={0.9}
+        color="#fef3c7"
+        castShadow
       />
 
-      {/* Fill light — cool sky bounce from opposite side */}
+      {/* Fill light - cool sky bounce from left */}
       <directionalLight
-        position={[-5, 6, -3]}
-        intensity={0.3}
-        color="#c7e8ff"
+        position={[-8, 8, -5]}
+        intensity={0.35}
+        color="#bfdbfe"
       />
 
-      {/* Rim light — emerald accent from behind/below for glow effect */}
+      {/* Rim/back light - emerald accent for glow effect */}
       <spotLight
-        position={[0, -3, 8]}
-        intensity={0.5}
+        position={[0, -4, 10]}
+        intensity={0.6}
         color="#34d399"
-        angle={0.7}
-        penumbra={0.6}
+        angle={0.8}
+        penumbra={0.7}
+        distance={20}
+        decay={2}
+      />
+
+      {/* Top accent - subtle overhead highlight */}
+      <pointLight
+        position={[0, 10, 0]}
+        intensity={0.25}
+        color="#fef9c3"
         distance={18}
         decay={2}
       />
 
-      {/* Top accent — subtle overhead fill */}
+      {/* Ground bounce light */}
       <pointLight
-        position={[0, 8, 0]}
-        intensity={0.2}
-        color="#fef9c3"
-        distance={15}
+        position={[0, -5, 0]}
+        intensity={0.1}
+        color="#86efac"
+        distance={12}
         decay={2}
       />
 
-      {/* Floating plants at various depths */}
+      {/* ===== PLANTS ===== */}
       {plants.map((plant, i) => (
         <FloatingPlant
           key={i}
@@ -231,43 +347,60 @@ export function HeroSceneContent({
           phase={plant.phase}
           speed={plant.speed * speed}
           leafColor={plant.leafColor}
+          enableGlow={quality !== 'low'}
         />
       ))}
 
-      {/* Particle field */}
+      {/* ===== PARTICLES ===== */}
       <ParticleField
-        count={particleCount}
-        spread={8}
-        speed={speed * 0.5}
-        size={0.03}
+        count={Math.floor(particleCount * settings.particleMultiplier)}
+        spread={10}
+        speed={speed * 0.4}
+        size={0.025}
         enableLeaves
       />
 
-      {/* Background glow orbs — layered for depth */}
-      <GlowOrb position={[-4, 2.5, -6]} color="#10b981" size={3.0} />
-      <GlowOrb position={[5, -0.5, -8]} color="#059669" size={3.5} />
-      <GlowOrb position={[0, 4, -9]} color="#34d399" size={4.0} />
-      <GlowOrb position={[-2, -1, -4]} color="#6ee7b7" size={1.8} />
-      <GlowOrb position={[3, 3, -7]} color="#047857" size={2.2} />
+      {/* Sparkle particles */}
+      {quality !== 'low' && <SparkleParticles count={quality === 'high' ? 60 : 30} />}
 
-      {/* Firefly accent lights */}
-      <Fireflies count={6} />
+      {/* ===== ATMOSPHERIC GLOW ORBS ===== */}
+      <GlowOrb position={[-5, 3, -7]} color="#10b981" size={3.5} pulseSpeed={0.8} />
+      <GlowOrb position={[6, -1, -9]} color="#059669" size={4} pulseSpeed={0.6} />
+      <GlowOrb position={[0, 5, -10]} color="#34d399" size={4.5} pulseSpeed={0.7} />
+      {quality !== 'low' && (
+        <>
+          <GlowOrb position={[-3, -2, -5]} color="#6ee7b7" size={2} pulseSpeed={1} />
+          <GlowOrb position={[4, 4, -8]} color="#047857" size={2.5} pulseSpeed={0.9} />
+        </>
+      )}
+      {quality === 'high' && (
+        <>
+          <GlowOrb position={[-6, 1, -6]} color="#a7f3d0" size={1.8} pulseSpeed={1.1} />
+          <GlowOrb position={[2, -3, -4]} color="#10b981" size={2.2} pulseSpeed={0.85} />
+        </>
+      )}
 
-      {/* Ground plane — subtler */}
-      <mesh position={[0, -3.5, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[40, 40]} />
-        <meshBasicMaterial color="#0f2a0f" transparent opacity={0.3} />
+      {/* ===== FIREFLIES ===== */}
+      <Fireflies count={settings.fireflyCount} />
+
+      {/* ===== GROUND PLANE ===== */}
+      <mesh position={[0, -4, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[50, 50]} />
+        <meshBasicMaterial color="#0a1f14" transparent opacity={0.4} />
+      </mesh>
+
+      {/* Fog plane for depth */}
+      <mesh position={[0, 0, -15]} rotation={[0, 0, 0]}>
+        <planeGeometry args={[60, 30]} />
+        <meshBasicMaterial color="#0d251a" transparent opacity={0.3} />
       </mesh>
     </group>
   );
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Standalone export (wraps in Scene for drop-in use)                        */
+/*  Exports                                                                    */
 /* -------------------------------------------------------------------------- */
 
-// Lazy-import the Scene wrapper to avoid circular dependency in barrel exports
-// Consumers can also render <HeroSceneContent /> directly inside their own <Scene>.
 export { HeroSceneContent as HeroScene };
-
 export default HeroSceneContent;
