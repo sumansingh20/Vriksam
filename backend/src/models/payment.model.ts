@@ -85,7 +85,6 @@ const paymentSchema = new Schema<IPaymentDocument, IPaymentModel>(
     },
     invoiceNumber: {
       type: String,
-      unique: true,
     },
     amount: {
       type: Number,

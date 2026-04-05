@@ -211,10 +211,10 @@ function FeatureCard({ feature, index, isInView }: FeatureCardProps) {
 
         {/* Hover gradient overlay */}
         <div className={cn(
-          'absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500',
+          'absolute inset-0 opacity-0 group-hover:opacity-[0.03] transition-opacity duration-500',
           'bg-gradient-to-br',
           colors.gradient,
-        )} style={{ opacity: 0.03 }} />
+        )} />
 
         {/* Content */}
         <div className={cn(
@@ -305,9 +305,9 @@ function FeatureCard({ feature, index, isInView }: FeatureCardProps) {
         )}>
           <div className={cn(
             'absolute inset-0 rounded-3xl',
-            'bg-gradient-to-r p-[1px]',
+            'bg-gradient-to-r p-[1px] opacity-30',
             colors.gradient,
-          )} style={{ opacity: 0.3 }}>
+          )}>
             <div className="w-full h-full bg-white rounded-3xl" />
           </div>
         </div>
@@ -334,13 +334,7 @@ export function FeaturesGrid() {
       <div className="absolute bottom-20 -right-20 w-96 h-96 bg-teal-100/30 rounded-full blur-3xl" />
 
       {/* Subtle grid pattern */}
-      <div
-        className="absolute inset-0 opacity-[0.4]"
-        style={{
-          backgroundImage: `radial-gradient(circle at 1px 1px, rgba(16, 185, 129, 0.04) 1px, transparent 0)`,
-          backgroundSize: '32px 32px',
-        }}
-      />
+      <div className="features-grid-pattern absolute inset-0 opacity-[0.4]" />
 
       <div className="relative max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
         {/* Section header */}

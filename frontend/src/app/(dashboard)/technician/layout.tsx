@@ -3,13 +3,7 @@ import { DashboardLayout } from '@/components/layout/dashboard-layout';
 
 export default function TechnicianLayout({ children }: { children: ReactNode }) {
   return (
-    <DashboardLayout
-      role="technician"
-      userName="Raj Patel"
-      userEmail="raj@vriksham.com"
-      userRole="Technician"
-      notificationCount={3}
-    >
+    <DashboardLayout role="technician" notificationCount={3}>
       {children}
     </DashboardLayout>
   );

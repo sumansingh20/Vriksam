@@ -2,13 +2,13 @@
 
 import { useMemo } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Leaf,
   LayoutDashboard,
   Users,
-  Building2,
   Flower2,
   Wrench,
   CreditCard,
@@ -23,9 +23,7 @@ import {
   FileText,
   Globe,
   Calendar,
-  Route,
   HeartPulse,
-  BookOpen,
   ChevronLeft,
   LogOut,
   type LucideIcon,
@@ -54,6 +52,7 @@ interface SidebarProps {
   userName?: string;
   userAvatar?: string;
   userEmail?: string;
+  onSignOut?: () => void;
 }
 
 // --- Navigation Config ---
@@ -62,15 +61,14 @@ const adminNavigation: NavGroup[] = [
   {
     title: "Overview",
     items: [
-      { label: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
+      { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
       { label: "Analytics", href: "/admin/analytics", icon: BarChart3 },
     ],
   },
   {
     title: "Management",
     items: [
-      { label: "Users", href: "/admin/users", icon: Users },
-      { label: "Clients", href: "/admin/clients", icon: Building2 },
+      { label: "Clients", href: "/admin/clients", icon: Users },
       { label: "Plants", href: "/admin/plants", icon: Flower2 },
       { label: "Technicians", href: "/admin/technicians", icon: Wrench },
       { label: "Teams", href: "/admin/teams", icon: UsersRound },
@@ -96,16 +94,16 @@ const clientNavigation: NavGroup[] = [
   {
     title: "Dashboard",
     items: [
-      { label: "Overview", href: "/client/overview", icon: Eye },
+      { label: "Overview", href: "/client", icon: Eye },
       { label: "My Plants", href: "/client/plants", icon: TreePine },
     ],
   },
   {
     title: "Services",
     items: [
-      { label: "Maintenance", href: "/client/maintenance", icon: ClipboardList },
+      { label: "Maintenance", href: "/client/maintenance", icon: Wrench },
       { label: "Reports", href: "/client/reports", icon: FileText },
-      { label: "Subscriptions", href: "/client/subscriptions", icon: CreditCard },
+      { label: "Subscriptions", href: "/client/subscriptions", icon: Receipt },
     ],
   },
   {
@@ -121,21 +119,21 @@ const techNavigation: NavGroup[] = [
   {
     title: "Work",
     items: [
-      { label: "Schedule", href: "/tech/schedule", icon: Calendar },
-      { label: "Routes", href: "/tech/routes", icon: Route },
+      { label: "Dashboard", href: "/technician", icon: LayoutDashboard },
+      { label: "Schedule", href: "/technician/schedule", icon: Calendar },
     ],
   },
   {
     title: "Plant Care",
     items: [
-      { label: "Plant Health", href: "/tech/plant-health", icon: HeartPulse },
-      { label: "Maintenance Log", href: "/tech/maintenance-log", icon: BookOpen },
+      { label: "Plant Health", href: "/technician/plant-health", icon: HeartPulse },
+      { label: "Maintenance Log", href: "/technician/maintenance-log", icon: ClipboardList },
     ],
   },
   {
     title: "System",
     items: [
-      { label: "Settings", href: "/tech/settings", icon: Settings },
+      { label: "Settings", href: "/technician/settings", icon: Settings },
     ],
   },
 ];
@@ -144,7 +142,7 @@ const partnerNavigation: NavGroup[] = [
   {
     title: "Overview",
     items: [
-      { label: "Dashboard", href: "/partner/dashboard", icon: LayoutDashboard },
+      { label: "Dashboard", href: "/partner", icon: LayoutDashboard },
     ],
   },
   {
@@ -181,6 +179,7 @@ export function Sidebar({
   userName = "John Doe",
   userAvatar,
   userEmail = "john@vriksham.com",
+  onSignOut,
 }: SidebarProps) {
   const pathname = usePathname();
   const navigation = useMemo(() => navigationMap[role], [role]);
@@ -191,15 +190,15 @@ export function Sidebar({
       animate={{ width: collapsed ? 72 : 260 }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
       className={cn(
-        "fixed top-0 left-0 z-30 flex h-screen flex-col border-r border-gray-200",
-        "bg-white"
+        "fixed top-0 left-0 z-30 flex h-screen flex-col border-r border-emerald-100/50",
+        "bg-white/86 shadow-[0_20px_50px_rgba(15,23,42,0.08)] backdrop-blur-2xl"
       )}
     >
       {/* Logo */}
-      <div className="flex h-16 shrink-0 items-center border-b border-gray-200 px-4">
+      <div className="flex h-16 shrink-0 items-center border-b border-emerald-100/60 px-4">
         <Link href="/" className="flex items-center gap-2.5 overflow-hidden">
           <div className="relative flex h-9 w-9 shrink-0 items-center justify-center">
-            <div className="absolute inset-0 rounded-xl bg-gray-900" />
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-700 shadow-lg shadow-emerald-600/30" />
             <Leaf className="h-5 w-5 relative z-10 text-white" />
           </div>
           <AnimatePresence>
@@ -249,7 +248,7 @@ export function Sidebar({
                           "group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors duration-150",
                           collapsed && "justify-center px-0",
                           isActive
-                            ? "text-gray-900"
+                              ? "text-gray-900"
                             : "text-gray-600 hover:text-gray-900"
                         )}
                         whileTap={{ scale: 0.98 }}
@@ -258,7 +257,7 @@ export function Sidebar({
                         {isActive && (
                           <motion.div
                             layoutId={`sidebar-active-${role}`}
-                            className="absolute inset-0 rounded-xl bg-gray-100"
+                            className="absolute inset-0 rounded-xl border border-emerald-200/80 bg-gradient-to-r from-emerald-50/90 to-teal-50/90"
                             transition={{
                               type: "spring",
                               stiffness: 350,
@@ -321,7 +320,7 @@ export function Sidebar({
       </nav>
 
       {/* Collapse Toggle */}
-      <div className="border-t border-gray-200 px-3 py-2">
+      <div className="border-t border-emerald-100/60 px-3 py-2">
         <motion.button
           onClick={() => onCollapsedChange?.(!collapsed)}
           whileHover={{ scale: 1.02 }}
@@ -351,7 +350,7 @@ export function Sidebar({
       </div>
 
       {/* User Section */}
-      <div className="border-t border-gray-200 px-3 py-3">
+      <div className="border-t border-emerald-100/60 px-3 py-3">
         <div
           className={cn(
             "flex items-center gap-3 rounded-xl px-3 py-2",
@@ -361,9 +360,11 @@ export function Sidebar({
           {/* Avatar */}
           <div className="relative h-8 w-8 shrink-0">
             {userAvatar ? (
-              <img
+              <Image
                 src={userAvatar}
                 alt={userName}
+                width={32}
+                height={32}
                 className="h-8 w-8 rounded-lg object-cover"
               />
             ) : (
@@ -399,10 +400,12 @@ export function Sidebar({
           <AnimatePresence>
             {!collapsed && (
               <motion.button
+                type="button"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.15 }}
+                onClick={onSignOut}
                 className="shrink-0 rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
                 aria-label="Sign out"
               >

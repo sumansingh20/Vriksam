@@ -27,6 +27,7 @@ export interface ActivityItem {
 
 interface RecentActivityProps {
   activities: ActivityItem[];
+  maxHeightClassName?: string;
   maxHeight?: string;
 }
 
@@ -69,7 +70,20 @@ const TYPE_CONFIG: Record<
 /*  Component                                                                 */
 /* -------------------------------------------------------------------------- */
 
-export function RecentActivity({ activities, maxHeight = '400px' }: RecentActivityProps) {
+export function RecentActivity({
+  activities,
+  maxHeightClassName = 'max-h-[400px]',
+  maxHeight,
+}: RecentActivityProps) {
+  const maxHeightFromValue =
+    maxHeight === '380px'
+      ? 'max-h-[380px]'
+      : maxHeight === '400px'
+        ? 'max-h-[400px]'
+        : undefined;
+
+  const resolvedMaxHeightClass = maxHeightFromValue || maxHeightClassName;
+
   return (
     <div className="rounded-xl border border-gray-200 bg-white">
       <div className="border-b border-gray-100 px-5 py-4">
@@ -78,11 +92,14 @@ export function RecentActivity({ activities, maxHeight = '400px' }: RecentActivi
         </h3>
       </div>
 
-      <div
-        className="overflow-y-auto scrollbar-thin"
-        style={{ maxHeight }}
-      >
+      <div className={cn('overflow-y-auto scrollbar-thin', resolvedMaxHeightClass)}>
         <div className="divide-y divide-gray-100">
+          {activities.length === 0 && (
+            <div className="px-5 py-8 text-center">
+              <p className="text-sm font-medium text-gray-700">No recent activity</p>
+              <p className="mt-1 text-xs text-gray-500">New maintenance, payments, and alerts will appear here.</p>
+            </div>
+          )}
           {activities.map((activity, index) => {
             const config = TYPE_CONFIG[activity.type];
             const Icon = config.icon;

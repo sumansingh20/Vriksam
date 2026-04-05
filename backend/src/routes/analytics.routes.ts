@@ -6,7 +6,7 @@ const router = Router();
 
 // All analytics routes require authentication and admin/technician access
 router.use(authenticate);
-router.use(authorize('ADMIN', 'TECHNICIAN'));
+router.use(authorize('ADMIN', 'TECHNICIAN', 'PARTNER', 'CLIENT'));
 
 router.get('/overview', analyticsController.getOverview);
 router.get('/plants', analyticsController.getPlantMetrics);

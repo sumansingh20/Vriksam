@@ -7,46 +7,47 @@ import {
   Leaf,
   Twitter,
   Linkedin,
-  Github,
+  Youtube,
   Instagram,
   ArrowRight,
   Mail,
-  Send,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { siteConfig } from "@/config/site";
 
 const footerLinks = {
   Platform: [
-    { label: "Dashboard", href: "/dashboard" },
     { label: "Marketplace", href: "/marketplace" },
-    { label: "AI Health Check", href: "#" },
-    { label: "Analytics", href: "#" },
+    { label: "Pricing", href: "/pricing" },
+    { label: "Case Studies", href: "/case-studies" },
+    { label: "Contact", href: "/contact" },
   ],
-  Solutions: [
-    { label: "Corporate", href: "/solutions/corporate" },
-    { label: "Residential", href: "/solutions/residential" },
-    { label: "Public Spaces", href: "/solutions/public" },
-    { label: "Custom", href: "/contact" },
+  Dashboards: [
+    { label: "Admin Console", href: "/admin" },
+    { label: "Partner Hub", href: "/partner" },
+    { label: "Client Workspace", href: "/client" },
+    { label: "Technician Ops", href: "/technician" },
   ],
   Company: [
     { label: "About", href: "/about" },
-    { label: "Case Studies", href: "/case-studies" },
-    { label: "Blog", href: "#" },
-    { label: "Careers", href: "#" },
+    { label: "Register", href: "/register" },
+    { label: "Sign In", href: "/login" },
+    { label: "Support", href: "/contact" },
   ],
-  Support: [
-    { label: "Documentation", href: "#" },
-    { label: "Contact", href: "/contact" },
-    { label: "Privacy", href: "#" },
-    { label: "Terms", href: "#" },
+  Explore: [
+    { label: "Marketplace", href: "/marketplace" },
+    { label: "Client Dashboard", href: "/client" },
+    { label: "Partner Dashboard", href: "/partner" },
+    { label: "Pricing", href: "/pricing" },
+    { label: "About", href: "/about" },
   ],
 };
 
 const socialLinks = [
-  { icon: Twitter, href: "#", label: "X (Twitter)" },
-  { icon: Linkedin, href: "#", label: "LinkedIn" },
-  { icon: Instagram, href: "#", label: "Instagram" },
-  { icon: Github, href: "#", label: "GitHub" },
+  { icon: Twitter, href: siteConfig.social.twitter, label: "X (Twitter)" },
+  { icon: Linkedin, href: siteConfig.social.linkedin, label: "LinkedIn" },
+  { icon: Instagram, href: siteConfig.social.instagram, label: "Instagram" },
+  { icon: Youtube, href: siteConfig.social.youtube, label: "YouTube" },
 ];
 
 function FadeInSection({
@@ -183,33 +184,30 @@ export function Footer() {
                 </a>
               </div>
 
-              {/* Newsletter */}
+              {/* Primary Actions */}
               <div className="w-full max-w-md">
-                <h3 className="text-sm font-semibold text-white">
-                  Stay in the loop
-                </h3>
+                <h3 className="text-sm font-semibold text-white">Plan Your Green Rollout</h3>
                 <p className="mt-1.5 text-sm text-gray-500">
-                  Green insights and product updates, delivered monthly.
+                  Talk to the Vriksham team for deployment planning, onboarding, and pricing.
                 </p>
-                <form
-                  onSubmit={(e) => e.preventDefault()}
-                  className="mt-4 flex gap-2"
-                >
-                  <div className="relative flex-1">
-                    <input
-                      type="email"
-                      placeholder="you@company.com"
-                      className="h-11 w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 text-sm text-white placeholder:text-gray-600 transition-all duration-200 focus:border-emerald-500/40 focus:bg-white/[0.06] focus:outline-none focus:ring-1 focus:ring-emerald-500/20"
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    className="group flex h-11 items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 px-5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/20 transition-all duration-200 hover:shadow-emerald-500/30 hover:shadow-xl"
+                <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                  <Link
+                    href="/contact"
+                    className="group inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 px-5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/20 transition-all duration-200 hover:shadow-emerald-500/30 hover:shadow-xl"
                   >
-                    Subscribe
-                    <Send className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-                  </button>
-                </form>
+                    Book Consultation
+                    <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
+                  </Link>
+                  <Link
+                    href="/register"
+                    className="inline-flex h-11 items-center justify-center rounded-xl border border-white/[0.14] bg-white/[0.04] px-5 text-sm font-semibold text-white transition-all duration-200 hover:bg-white/[0.08]"
+                  >
+                    Create Account
+                  </Link>
+                </div>
+                <p className="mt-3 text-xs text-gray-500">
+                  Support: {siteConfig.support.email} | {siteConfig.support.phone}
+                </p>
               </div>
             </div>
           </FadeInSection>
@@ -262,6 +260,8 @@ export function Footer() {
                   <a
                     key={social.label}
                     href={social.href}
+                    target="_blank"
+                    rel="noreferrer noopener"
                     className={cn(
                       "flex h-9 w-9 items-center justify-center rounded-lg text-gray-600 transition-all duration-200",
                       "hover:bg-white/[0.06] hover:text-white"

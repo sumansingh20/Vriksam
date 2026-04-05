@@ -142,6 +142,21 @@ const nextConfig = {
         destination: "/",
         permanent: true,
       },
+      {
+        source: "/dashboard",
+        destination: "/client",
+        permanent: false,
+      },
+      {
+        source: "/dashboard/:role(admin|client|partner|technician)",
+        destination: "/:role",
+        permanent: false,
+      },
+      {
+        source: "/dashboard/:role(admin|client|partner|technician)/:path*",
+        destination: "/:role/:path*",
+        permanent: false,
+      },
     ];
   },
 

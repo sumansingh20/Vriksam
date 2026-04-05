@@ -1,78 +1,62 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import {
   Settings,
   Users,
   CreditCard,
   Bell,
-  Upload,
-  Trash2,
+  Loader2,
+  RefreshCw,
 } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
 import { cn } from '@/lib/utils';
-
-/* -------------------------------------------------------------------------- */
-/*  Types                                                                      */
-/* -------------------------------------------------------------------------- */
+import { useAuth } from '@/hooks/use-auth';
+import authService from '@/services/auth.service';
+import api from '@/services/api';
 
 type SettingsTab = 'profile' | 'team' | 'billing' | 'notifications';
 
-interface TeamMember {
-  id: string;
-  name: string;
-  initials: string;
-  role: string;
-  email: string;
-  status: 'Active' | 'Invited' | 'Inactive';
-  avatarBg: string;
+interface ApiEnvelope<T> {
+  success: boolean;
+  data: T;
+  pagination?: {
+    total?: number;
+  };
 }
 
-interface NotificationSetting {
+interface TechnicianRow {
   id: string;
-  label: string;
-  description: string;
-  enabled: boolean;
+  specialization?: string | null;
+  isAvailable?: boolean;
+  user?: {
+    id?: string;
+    name?: string;
+    email?: string;
+  };
 }
 
-interface PaymentHistoryItem {
+interface InvoiceRow {
   id: string;
-  date: string;
-  description: string;
-  amount: string;
-  status: 'Paid' | 'Pending' | 'Failed';
+  status?: string;
+  totalAmount?: number;
+  amountPaid?: number;
+  issueDate?: string;
+  client?: {
+    companyName?: string;
+  };
 }
 
-/* -------------------------------------------------------------------------- */
-/*  Mock Data                                                                  */
-/* -------------------------------------------------------------------------- */
-
-const teamMembers: TeamMember[] = [
-  { id: '1', name: 'Arjun Kapoor', initials: 'AK', role: 'Owner', email: 'arjun@partner.vriksham.org', status: 'Active', avatarBg: 'from-emerald-400 to-green-600' },
-  { id: '2', name: 'Priya Menon', initials: 'PM', role: 'Operations Manager', email: 'priya@partner.vriksham.org', status: 'Active', avatarBg: 'from-teal-400 to-cyan-600' },
-  { id: '3', name: 'Vikram Shah', initials: 'VS', role: 'Team Lead', email: 'vikram@partner.vriksham.org', status: 'Active', avatarBg: 'from-violet-400 to-purple-600' },
-  { id: '4', name: 'Neha Gupta', initials: 'NG', role: 'Coordinator', email: 'neha@partner.vriksham.org', status: 'Invited', avatarBg: 'from-amber-400 to-orange-600' },
-];
-
-const initialNotifications: NotificationSetting[] = [
-  { id: 'visit_scheduled', label: 'Visit Scheduled', description: 'Notify when a new service visit is scheduled', enabled: true },
-  { id: 'visit_completed', label: 'Visit Completed', description: 'Notify when a technician completes a visit', enabled: true },
-  { id: 'health_alert', label: 'Plant Health Alerts', description: 'Receive alerts when plant health drops below threshold', enabled: true },
-  { id: 'new_client', label: 'New Client Onboarded', description: 'Notify when a new client is added to your portfolio', enabled: true },
-  { id: 'payment_received', label: 'Payment Received', description: 'Notify when a client payment is received', enabled: false },
-  { id: 'weekly_report', label: 'Weekly Summary Report', description: 'Receive automated weekly performance summary', enabled: true },
-  { id: 'technician_issue', label: 'Technician Issues', description: 'Alert when a technician reports an issue', enabled: true },
-  { id: 'overdue_visit', label: 'Overdue Visit Alerts', description: 'Notify when visits become overdue', enabled: true },
-];
-
-const paymentHistory: PaymentHistoryItem[] = [
-  { id: '1', date: 'Mar 1, 2026', description: 'Monthly Subscription - Professional Plan', amount: '\u20B924,999', status: 'Paid' },
-  { id: '2', date: 'Feb 1, 2026', description: 'Monthly Subscription - Professional Plan', amount: '\u20B924,999', status: 'Paid' },
-  { id: '3', date: 'Jan 1, 2026', description: 'Monthly Subscription - Professional Plan', amount: '\u20B924,999', status: 'Paid' },
-  { id: '4', date: 'Dec 1, 2025', description: 'Monthly Subscription - Professional Plan', amount: '\u20B924,999', status: 'Paid' },
-  { id: '5', date: 'Nov 1, 2025', description: 'Monthly Subscription - Basic Plan', amount: '\u20B914,999', status: 'Paid' },
-];
+interface NotificationState {
+  email: boolean;
+  push: boolean;
+  sms: boolean;
+  maintenanceReminders: boolean;
+  paymentAlerts: boolean;
+  healthAlerts: boolean;
+}
 
 const tabs: { id: SettingsTab; label: string; icon: React.ElementType }[] = [
   { id: 'profile', label: 'Profile', icon: Settings },
@@ -81,21 +65,79 @@ const tabs: { id: SettingsTab; label: string; icon: React.ElementType }[] = [
   { id: 'notifications', label: 'Notifications', icon: Bell },
 ];
 
-/* -------------------------------------------------------------------------- */
-/*  Helper Components                                                          */
-/* -------------------------------------------------------------------------- */
+const defaultNotifications: NotificationState = {
+  email: true,
+  push: true,
+  sms: false,
+  maintenanceReminders: true,
+  paymentAlerts: true,
+  healthAlerts: true,
+};
+
+const notificationRows: Array<{
+  key: keyof NotificationState;
+  label: string;
+  description: string;
+}> = [
+  {
+    key: 'maintenanceReminders',
+    label: 'Visit reminders',
+    description: 'Notify when a service visit is due or overdue.',
+  },
+  {
+    key: 'healthAlerts',
+    label: 'Plant health alerts',
+    description: 'Get critical updates when plant condition degrades.',
+  },
+  {
+    key: 'paymentAlerts',
+    label: 'Payment updates',
+    description: 'Receive payment confirmation and failure alerts.',
+  },
+  {
+    key: 'email',
+    label: 'Email channel',
+    description: 'Send notifications to your registered email.',
+  },
+  {
+    key: 'push',
+    label: 'Push channel',
+    description: 'Allow in-app and browser push notifications.',
+  },
+  {
+    key: 'sms',
+    label: 'SMS channel',
+    description: 'Send urgent notifications to your phone.',
+  },
+];
 
 function GlassCard({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={cn('rounded-2xl border border-gray-200/60 bg-white/80 p-6 backdrop-blur-xl dark:border-white/5 dark:bg-gray-900/50', className)}>
+    <div
+      className={cn(
+        'rounded-2xl border border-gray-200/60 bg-white/80 p-6 backdrop-blur-xl dark:border-white/5 dark:bg-gray-900/50',
+        className,
+      )}
+    >
       {children}
     </div>
   );
 }
 
-function ToggleSwitch({ enabled, onChange }: { enabled: boolean; onChange: (v: boolean) => void }) {
+function ToggleSwitch({
+  enabled,
+  onChange,
+  label,
+}: {
+  enabled: boolean;
+  onChange: (value: boolean) => void;
+  label: string;
+}) {
   return (
     <button
+      type="button"
+      aria-label={label}
+      title={label}
       onClick={() => onChange(!enabled)}
       className={cn(
         'relative h-6 w-11 rounded-full transition-colors duration-200',
@@ -111,33 +153,138 @@ function ToggleSwitch({ enabled, onChange }: { enabled: boolean; onChange: (v: b
   );
 }
 
-function StatusBadge({ status }: { status: string }) {
-  const config: Record<string, string> = {
-    Active: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400',
-    Invited: 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400',
-    Inactive: 'bg-gray-100 text-gray-600 dark:bg-gray-500/10 dark:text-gray-400',
-    Paid: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400',
-    Pending: 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400',
-    Failed: 'bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400',
-  };
-  return (
-    <span className={cn('inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold', config[status] ?? config.Active)}>
-      {status}
-    </span>
-  );
+function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    minimumFractionDigits: 0,
+  }).format(amount);
 }
 
-/* -------------------------------------------------------------------------- */
-/*  Page                                                                       */
-/* -------------------------------------------------------------------------- */
-
 export default function PartnerSettingsPage() {
-  const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
-  const [notifications, setNotifications] = useState(initialNotifications);
+  const { user, updateUser } = useAuth();
 
-  const toggleNotification = (id: string) => {
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, enabled: !n.enabled } : n)));
-  };
+  const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
+  const [profileForm, setProfileForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+  });
+
+  const [notifications, setNotifications] = useState<NotificationState>(
+    defaultNotifications,
+  );
+
+  useEffect(() => {
+    const currentUser = (user ?? {}) as Record<string, unknown>;
+    const userNotifications =
+      ((currentUser.preferences as { notifications?: Partial<NotificationState> } | undefined)
+        ?.notifications as Partial<NotificationState> | undefined) ?? {};
+
+    setProfileForm((prev) => ({
+      ...prev,
+      name: String(currentUser.name ?? ''),
+      email: String(currentUser.email ?? ''),
+      phone: String(currentUser.phone ?? ''),
+    }));
+
+    setNotifications({
+      ...defaultNotifications,
+      ...userNotifications,
+    });
+  }, [user]);
+
+  const techniciansQuery = useQuery({
+    queryKey: ['partner', 'settings', 'technicians'],
+    queryFn: async () => {
+      const response = await api.get<ApiEnvelope<TechnicianRow[]>>('/technicians', {
+        params: { page: 1, limit: 20, sortBy: 'createdAt', sortOrder: 'desc' },
+      });
+
+      return response.data ?? [];
+    },
+    staleTime: 60 * 1000,
+  });
+
+  const invoicesQuery = useQuery({
+    queryKey: ['partner', 'settings', 'invoices'],
+    queryFn: async () => {
+      const response = await api.get<ApiEnvelope<InvoiceRow[]>>('/invoices', {
+        params: { page: 1, limit: 80, sortBy: 'issueDate', sortOrder: 'desc' },
+      });
+
+      return response.data ?? [];
+    },
+    staleTime: 60 * 1000,
+  });
+
+  const clientsTotalQuery = useQuery({
+    queryKey: ['partner', 'settings', 'clientCount'],
+    queryFn: async () => {
+      const response = await api.get<ApiEnvelope<unknown[]>>('/clients', {
+        params: { page: 1, limit: 1 },
+      });
+
+      return Number(response.pagination?.total ?? response.data?.length ?? 0);
+    },
+    staleTime: 60 * 1000,
+  });
+
+  const plantsTotalQuery = useQuery({
+    queryKey: ['partner', 'settings', 'plantCount'],
+    queryFn: async () => {
+      const response = await api.get<ApiEnvelope<unknown[]>>('/plants', {
+        params: { page: 1, limit: 1 },
+      });
+
+      return Number(response.pagination?.total ?? response.data?.length ?? 0);
+    },
+    staleTime: 60 * 1000,
+  });
+
+  const billingStats = useMemo(() => {
+    const invoices = invoicesQuery.data ?? [];
+    const paid = invoices.filter((invoice) =>
+      String(invoice.status ?? '').toUpperCase().includes('PAID'),
+    );
+    const paidAmount = paid.reduce(
+      (sum, invoice) => sum + Number(invoice.amountPaid ?? invoice.totalAmount ?? 0),
+      0,
+    );
+
+    return {
+      paidAmount,
+      paidCount: paid.length,
+      totalCount: invoices.length,
+      pendingCount: invoices.filter((invoice) =>
+        String(invoice.status ?? '').toUpperCase().includes('PENDING'),
+      ).length,
+    };
+  }, [invoicesQuery.data]);
+
+  const saveProfileMutation = useMutation({
+    mutationFn: async () => {
+      return authService.updateProfile({
+        name: profileForm.name.trim(),
+        phone: profileForm.phone.trim(),
+        preferences: { notifications },
+      } as never);
+    },
+    onSuccess: (updated) => {
+      updateUser(updated as never);
+    },
+  });
+
+  const teamSize = techniciansQuery.data?.length ?? 0;
+  const clientsTotal = clientsTotalQuery.data ?? 0;
+  const plantsTotal = plantsTotalQuery.data ?? 0;
+
+  const usageRows = [
+    { label: 'Clients', current: clientsTotal },
+    { label: 'Technicians', current: teamSize },
+    { label: 'Plants', current: plantsTotal },
+  ];
+  const usageScaleMax = Math.max(...usageRows.map((item) => item.current), 1);
 
   const inputClasses =
     'w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-white/10 dark:bg-gray-800 dark:text-white';
@@ -146,15 +293,14 @@ export default function PartnerSettingsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Settings"
-        description="Manage your partner account, team, billing, and notification preferences."
+        description="Manage your live partner profile, team visibility, billing, and notifications."
         breadcrumbs={[
-          { label: 'Partner', href: '/dashboard/partner' },
+          { label: 'Partner', href: '/partner' },
           { label: 'Settings' },
         ]}
       />
 
       <div className="flex flex-col gap-6 lg:flex-row">
-        {/* Sidebar Tabs */}
         <div className="w-full shrink-0 lg:w-56">
           <GlassCard className="p-2">
             <nav className="space-y-1">
@@ -163,6 +309,7 @@ export default function PartnerSettingsPage() {
                 return (
                   <button
                     key={tab.id}
+                    type="button"
                     onClick={() => setActiveTab(tab.id)}
                     className={cn(
                       'flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all',
@@ -180,15 +327,13 @@ export default function PartnerSettingsPage() {
           </GlassCard>
         </div>
 
-        {/* Content */}
         <div className="flex-1">
           <motion.div
             key={activeTab}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: 0.2 }}
           >
-            {/* ---- Profile ---- */}
             {activeTab === 'profile' && (
               <GlassCard>
                 <h3 className="mb-6 text-lg font-semibold text-gray-900 dark:text-white">
@@ -196,215 +341,231 @@ export default function PartnerSettingsPage() {
                 </h3>
                 <div className="space-y-5">
                   <div>
-                    <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Company Name
+                    <label htmlFor="partner-name" className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Company / Account Name
                     </label>
-                    <input type="text" defaultValue="GreenCare Solutions Pvt. Ltd." className={inputClasses} />
+                    <input
+                      id="partner-name"
+                      type="text"
+                      value={profileForm.name}
+                      onChange={(event) =>
+                        setProfileForm((prev) => ({ ...prev, name: event.target.value }))
+                      }
+                      className={inputClasses}
+                    />
                   </div>
+
                   <div className="grid gap-5 sm:grid-cols-2">
                     <div>
-                      <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      <label htmlFor="partner-email" className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
                         Email
                       </label>
-                      <input type="email" defaultValue="partner@vriksham.org" className={inputClasses} />
+                      <input id="partner-email" type="email" value={profileForm.email} readOnly className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-500 dark:border-white/10 dark:bg-gray-800 dark:text-gray-400" />
                     </div>
                     <div>
-                      <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      <label htmlFor="partner-phone" className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
                         Phone
                       </label>
-                      <input type="tel" defaultValue="+91 80 4567 8901" className={inputClasses} />
+                      <input
+                        id="partner-phone"
+                        type="tel"
+                        value={profileForm.phone}
+                        onChange={(event) =>
+                          setProfileForm((prev) => ({ ...prev, phone: event.target.value }))
+                        }
+                        className={inputClasses}
+                      />
                     </div>
                   </div>
-                  <div>
-                    <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Address
-                    </label>
-                    <input type="text" defaultValue="42, Green Avenue, Koramangala, Bangalore - 560034" className={inputClasses} />
-                  </div>
+
                   <div className="grid gap-5 sm:grid-cols-2">
-                    <div>
-                      <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        GST Number
-                      </label>
-                      <input type="text" defaultValue="29AADCG1234F1ZH" className={inputClasses} />
-                    </div>
-                    <div>
-                      <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        PAN Number
-                      </label>
-                      <input type="text" defaultValue="AADCG1234F" className={inputClasses} />
-                    </div>
+                    <p className="rounded-xl border border-emerald-100/60 bg-emerald-50/70 px-4 py-3 text-xs text-emerald-800 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300 sm:col-span-2">
+                      Profile fields are connected to your live account data. Tax IDs and brand assets are managed through onboarding support.
+                    </p>
                   </div>
-                  <div>
-                    <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Company Logo
-                    </label>
-                    <div className="flex items-center gap-4">
-                      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-green-600 text-lg font-bold text-white shadow-lg">
-                        GC
-                      </div>
-                      <button className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-white/10 dark:bg-gray-800 dark:text-gray-300">
-                        <Upload className="h-4 w-4" />
-                        Upload New Logo
-                      </button>
-                    </div>
-                  </div>
-                  <div className="flex justify-end pt-2">
-                    <button className="rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 transition-shadow hover:shadow-emerald-500/40">
-                      Save Changes
+
+                  <div className="flex items-center justify-between pt-2">
+                    {saveProfileMutation.isError ? (
+                      <p className="text-xs text-red-600">
+                        {(saveProfileMutation.error as Error)?.message || 'Unable to save profile.'}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-gray-400">Saved to your authenticated profile.</p>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => saveProfileMutation.mutate()}
+                      disabled={saveProfileMutation.isPending}
+                      className="rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 transition-shadow hover:shadow-emerald-500/40 disabled:cursor-not-allowed disabled:opacity-70"
+                    >
+                      {saveProfileMutation.isPending ? 'Saving...' : 'Save Changes'}
                     </button>
                   </div>
                 </div>
               </GlassCard>
             )}
 
-            {/* ---- Team ---- */}
             {activeTab === 'team' && (
               <GlassCard>
                 <div className="mb-6 flex items-center justify-between">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                     Team Members
                   </h3>
-                  <button className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-emerald-600">
-                    Invite Member
+                  <button
+                    type="button"
+                    onClick={() => techniciansQuery.refetch()}
+                    className="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 dark:border-white/10 dark:text-gray-300"
+                  >
+                    <RefreshCw className="h-3.5 w-3.5" />
+                    Refresh
                   </button>
                 </div>
-                <div className="space-y-3">
-                  {teamMembers.map((member) => (
-                    <div
-                      key={member.id}
-                      className="flex items-center justify-between rounded-xl bg-gray-50/80 p-4 dark:bg-white/[0.03]"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={cn('flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br text-xs font-bold text-white', member.avatarBg)}>
-                          {member.initials}
-                        </div>
+
+                {techniciansQuery.isLoading ? (
+                  <div className="flex items-center gap-2 rounded-xl bg-gray-50/80 px-4 py-3 text-sm text-gray-600 dark:bg-white/[0.03] dark:text-gray-300">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Loading live team data...
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {(techniciansQuery.data ?? []).map((member) => (
+                      <div
+                        key={member.id}
+                        className="flex items-center justify-between rounded-xl bg-gray-50/80 p-4 dark:bg-white/[0.03]"
+                      >
                         <div>
-                          <p className="text-sm font-medium text-gray-900 dark:text-white">{member.name}</p>
-                          <p className="text-xs text-gray-500">{member.email}</p>
+                          <p className="text-sm font-medium text-gray-900 dark:text-white">
+                            {member.user?.name || 'Unnamed technician'}
+                          </p>
+                          <p className="text-xs text-gray-500">{member.user?.email || 'No email'}</p>
+                          <p className="mt-1 text-xs text-gray-500">
+                            {member.specialization || 'General maintenance'}
+                          </p>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
-                          {member.role}
+                        <span
+                          className={cn(
+                            'rounded-full px-2.5 py-1 text-[11px] font-semibold',
+                            member.isAvailable
+                              ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
+                              : 'bg-gray-100 text-gray-600 dark:bg-gray-500/10 dark:text-gray-400',
+                          )}
+                        >
+                          {member.isAvailable ? 'Active' : 'Inactive'}
                         </span>
-                        <StatusBadge status={member.status} />
-                        {member.role !== 'Owner' && (
-                          <button className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10">
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        )}
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                    {(techniciansQuery.data ?? []).length === 0 && (
+                      <p className="text-sm text-gray-500">No team members available.</p>
+                    )}
+                  </div>
+                )}
               </GlassCard>
             )}
 
-            {/* ---- Billing ---- */}
             {activeTab === 'billing' && (
               <div className="space-y-6">
-                {/* Current Plan */}
                 <GlassCard>
                   <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
-                    Current Plan
+                    Billing Overview
                   </h3>
-                  <div className="rounded-xl bg-gradient-to-r from-emerald-50 to-green-50 p-5 dark:from-emerald-500/5 dark:to-green-500/5">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-gray-500">Subscription</p>
-                        <p className="mt-1 text-2xl font-bold text-emerald-700 dark:text-emerald-400">Professional Plan</p>
-                        <p className="mt-1 text-sm text-gray-500">Billed monthly - next renewal on Apr 1, 2026</p>
+                  {invoicesQuery.isLoading ? (
+                    <div className="flex items-center gap-2 rounded-xl bg-gray-50/80 px-4 py-3 text-sm text-gray-600 dark:bg-white/[0.03] dark:text-gray-300">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Loading invoice data...
+                    </div>
+                  ) : (
+                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                      <div className="rounded-xl bg-emerald-50/70 p-4 dark:bg-emerald-500/10">
+                        <p className="text-xs text-gray-500">Revenue collected</p>
+                        <p className="mt-1 text-lg font-bold text-emerald-700 dark:text-emerald-400">
+                          {formatCurrency(billingStats.paidAmount)}
+                        </p>
                       </div>
-                      <div className="text-right">
-                        <p className="text-sm text-gray-500">Monthly Cost</p>
-                        <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">{'\u20B9'}24,999</p>
+                      <div className="rounded-xl bg-sky-50/70 p-4 dark:bg-sky-500/10">
+                        <p className="text-xs text-gray-500">Paid invoices</p>
+                        <p className="mt-1 text-lg font-bold text-sky-700 dark:text-sky-400">
+                          {billingStats.paidCount}
+                        </p>
+                      </div>
+                      <div className="rounded-xl bg-amber-50/70 p-4 dark:bg-amber-500/10">
+                        <p className="text-xs text-gray-500">Pending invoices</p>
+                        <p className="mt-1 text-lg font-bold text-amber-700 dark:text-amber-400">
+                          {billingStats.pendingCount}
+                        </p>
+                      </div>
+                      <div className="rounded-xl bg-violet-50/70 p-4 dark:bg-violet-500/10">
+                        <p className="text-xs text-gray-500">Total invoices</p>
+                        <p className="mt-1 text-lg font-bold text-violet-700 dark:text-violet-400">
+                          {billingStats.totalCount}
+                        </p>
                       </div>
                     </div>
-                  </div>
-
-                  {/* Usage */}
-                  <div className="mt-5 space-y-3">
-                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Usage</h4>
-                    {[
-                      { label: 'Clients', current: 24, max: 50 },
-                      { label: 'Technicians', current: 8, max: 15 },
-                      { label: 'Plants', current: 1847, max: 5000 },
-                    ].map((item) => (
-                      <div key={item.label} className="rounded-xl bg-gray-50/80 p-3 dark:bg-white/[0.03]">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-gray-600 dark:text-gray-400">{item.label}</span>
-                          <span className="font-semibold text-gray-900 dark:text-white">
-                            {item.current.toLocaleString()} / {item.max.toLocaleString()}
-                          </span>
-                        </div>
-                        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
-                          <div
-                            className="h-full rounded-full bg-emerald-500"
-                            style={{ width: `${(item.current / item.max) * 100}%` }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  )}
                 </GlassCard>
 
-                {/* Payment History */}
                 <GlassCard>
-                  <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
-                    Payment History
-                  </h3>
-                  <div className="overflow-x-auto">
-                    <table className="w-full min-w-[500px]">
-                      <thead>
-                        <tr className="border-b border-gray-100 dark:border-white/5">
-                          <th className="px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-400">Date</th>
-                          <th className="px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-400">Description</th>
-                          <th className="px-3 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wider text-gray-400">Amount</th>
-                          <th className="px-3 py-2.5 text-center text-[11px] font-semibold uppercase tracking-wider text-gray-400">Status</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-50 dark:divide-white/[0.03]">
-                        {paymentHistory.map((payment) => (
-                          <tr key={payment.id} className="transition-colors hover:bg-gray-50/50 dark:hover:bg-white/[0.02]">
-                            <td className="px-3 py-3 text-sm text-gray-600 dark:text-gray-400">{payment.date}</td>
-                            <td className="px-3 py-3 text-sm text-gray-900 dark:text-white">{payment.description}</td>
-                            <td className="px-3 py-3 text-right text-sm font-semibold text-gray-900 dark:text-white">{payment.amount}</td>
-                            <td className="px-3 py-3 text-center">
-                              <StatusBadge status={payment.status} />
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                  <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">Usage</h3>
+                  <div className="space-y-3">
+                    {usageRows.map((item) => {
+                      const usagePercent = Math.round((item.current / usageScaleMax) * 100);
+
+                      return (
+                        <div key={item.label} className="rounded-xl bg-gray-50/80 p-3 dark:bg-white/[0.03]">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-gray-600 dark:text-gray-400">{item.label}</span>
+                            <span className="font-semibold text-gray-900 dark:text-white">
+                              {item.current.toLocaleString()} live records
+                            </span>
+                          </div>
+                          <progress
+                            value={item.current}
+                            max={usageScaleMax}
+                            className="mt-2 h-2 w-full overflow-hidden rounded-full [&::-webkit-progress-bar]:bg-gray-200 [&::-webkit-progress-value]:bg-emerald-500"
+                            aria-label={`${item.label} usage ${usagePercent} percent`}
+                            title={`${item.label} usage ${usagePercent} percent`}
+                          />
+                        </div>
+                      );
+                    })}
                   </div>
                 </GlassCard>
               </div>
             )}
 
-            {/* ---- Notifications ---- */}
             {activeTab === 'notifications' && (
               <GlassCard>
-                <h3 className="mb-6 text-lg font-semibold text-gray-900 dark:text-white">
-                  Notification Preferences
-                </h3>
+                <div className="mb-6 flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    Notification Preferences
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => saveProfileMutation.mutate()}
+                    disabled={saveProfileMutation.isPending}
+                    className="rounded-xl border border-gray-200 px-3 py-2 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:text-gray-300"
+                  >
+                    {saveProfileMutation.isPending ? 'Saving...' : 'Save'}
+                  </button>
+                </div>
+
                 <div className="space-y-4">
-                  {notifications.map((notification) => (
+                  {notificationRows.map((row) => (
                     <div
-                      key={notification.id}
+                      key={row.key}
                       className="flex items-center justify-between rounded-xl bg-gray-50/80 p-4 dark:bg-white/[0.03]"
                     >
                       <div>
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">
-                          {notification.label}
-                        </p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">{row.label}</p>
                         <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                          {notification.description}
+                          {row.description}
                         </p>
                       </div>
                       <ToggleSwitch
-                        enabled={notification.enabled}
-                        onChange={() => toggleNotification(notification.id)}
+                        enabled={notifications[row.key]}
+                        onChange={(value) =>
+                          setNotifications((prev) => ({ ...prev, [row.key]: value }))
+                        }
+                        label={`Toggle ${row.label}`}
                       />
                     </div>
                   ))}

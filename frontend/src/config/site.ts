@@ -245,8 +245,8 @@ export const ctaConfig = {
     href: '/register',
   },
   secondary: {
-    label: 'Book a Demo',
-    href: '/contact?type=demo',
+    label: 'Book a Consultation',
+    href: '/contact',
   },
   login: {
     label: 'Sign In',

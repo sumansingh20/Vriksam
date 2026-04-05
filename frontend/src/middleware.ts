@@ -13,7 +13,7 @@ import { NextRequest, NextResponse } from 'next/server';
 // -----------------------------------------------------------------------------
 
 /** Routes that require an authenticated session (token cookie present). */
-const protectedRoutes = ['/dashboard'];
+const protectedRoutes = ['/admin', '/client', '/partner', '/technician'];
 
 /** Routes only accessible to non-authenticated users (redirects to dashboard if logged in). */
 const authRoutes = ['/login', '/register', '/forgot-password'];
@@ -27,10 +27,19 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // -------------------------------------------------------------------------
+  // Legacy dashboard routes -> canonical role paths
+  // -------------------------------------------------------------------------
+  if (pathname === '/dashboard' || pathname.startsWith('/dashboard/')) {
+    const mappedPath = pathname.replace(/^\/dashboard/, '') || '/client';
+    const normalizedPath = mappedPath === '/' ? '/client' : mappedPath;
+    return NextResponse.redirect(new URL(normalizedPath, request.url));
+  }
+
+  // -------------------------------------------------------------------------
   // Authenticated user visiting auth pages -> redirect to dashboard
   // -------------------------------------------------------------------------
   if (authRoutes.some((route) => pathname.startsWith(route)) && token) {
-    return NextResponse.redirect(new URL('/dashboard/admin', request.url));
+    return NextResponse.redirect(new URL('/client', request.url));
   }
 
   // -------------------------------------------------------------------------
@@ -70,5 +79,14 @@ export function middleware(request: NextRequest) {
 // -----------------------------------------------------------------------------
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/login', '/register', '/forgot-password'],
+  matcher: [
+    '/dashboard/:path*',
+    '/admin/:path*',
+    '/client/:path*',
+    '/partner/:path*',
+    '/technician/:path*',
+    '/login',
+    '/register',
+    '/forgot-password',
+  ],
 };

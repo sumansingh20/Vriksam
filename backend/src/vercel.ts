@@ -9,7 +9,7 @@ async function getApp() {
 
   try {
     // Connect to MongoDB first
-    const mongoModule = await import('./config/mongodb');
+    const mongoModule = await import('./config/mongodb.js');
     if (!mongoModule.isMongoDBConnected()) {
       if (!dbPromise) {
         dbPromise = mongoModule.connectMongoDB()
@@ -24,7 +24,7 @@ async function getApp() {
     }
 
     // Create Express app after DB is connected
-    const appModule = await import('./app');
+    const appModule = await import('./app.js');
     app = appModule.createApp();
     console.log('[Vercel] Express app initialized');
     return app;

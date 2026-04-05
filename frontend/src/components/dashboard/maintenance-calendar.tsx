@@ -47,26 +47,12 @@ const STATUS_STYLES: Record<MaintenanceStatus, { label: string; className: strin
 };
 
 /* -------------------------------------------------------------------------- */
-/*  Default data                                                              */
-/* -------------------------------------------------------------------------- */
-
-const DEFAULT_VISITS: MaintenanceVisit[] = [
-  { id: '1', date: '2026-03-16', clientName: 'TechCorp Ltd', location: 'Mumbai HQ, Floor 3', technician: 'Raj Patel', status: 'scheduled' },
-  { id: '2', date: '2026-03-16', clientName: 'GreenSpace Inc', location: 'Bangalore Office', technician: 'Priya Sharma', status: 'scheduled' },
-  { id: '3', date: '2026-03-17', clientName: 'EcoVentures', location: 'Delhi Campus', technician: 'Amit Kumar', status: 'scheduled' },
-  { id: '4', date: '2026-03-17', clientName: 'Wellness Hub', location: 'Hyderabad Tower', technician: 'Sneha Reddy', status: 'in_progress' },
-  { id: '5', date: '2026-03-18', clientName: 'InfoSys Garden', location: 'Pune SEZ', technician: 'Raj Patel', status: 'scheduled' },
-  { id: '6', date: '2026-03-15', clientName: 'StartUp Valley', location: 'Chennai Office', technician: 'Priya Sharma', status: 'overdue' },
-  { id: '7', date: '2026-03-14', clientName: 'Metro Living', location: 'Kolkata Mall', technician: 'Amit Kumar', status: 'completed' },
-];
-
-/* -------------------------------------------------------------------------- */
 /*  Component                                                                 */
 /* -------------------------------------------------------------------------- */
 
 type SortField = 'date' | 'clientName' | 'technician' | 'status';
 
-export function MaintenanceCalendar({ visits = DEFAULT_VISITS }: MaintenanceCalendarProps) {
+export function MaintenanceCalendar({ visits = [] }: MaintenanceCalendarProps) {
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortAsc, setSortAsc] = useState(true);
 
@@ -168,6 +154,13 @@ export function MaintenanceCalendar({ visits = DEFAULT_VISITS }: MaintenanceCale
                 </tr>
               );
             })}
+            {sorted.length === 0 && (
+              <tr>
+                <td colSpan={5} className="px-5 py-8 text-center text-sm text-gray-500">
+                  No scheduled maintenance visits in this range.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

@@ -57,27 +57,10 @@ const SUB_STYLES: Record<SubscriptionStatus, { label: string; className: string 
 };
 
 /* -------------------------------------------------------------------------- */
-/*  Default mock data                                                         */
-/* -------------------------------------------------------------------------- */
-
-const DEFAULT_CLIENTS: ClientRecord[] = [
-  { id: 'CLI-001', name: 'Rahul Mehta', company: 'TechCorp Ltd', email: 'rahul@techcorp.in', phone: '+91 98765 43210', type: 'corporate', locations: 3, plants: 45, subscription: 'active' },
-  { id: 'CLI-002', name: 'Anita Desai', company: 'GreenSpace Inc', email: 'anita@greenspace.co', phone: '+91 87654 32109', type: 'corporate', locations: 2, plants: 32, subscription: 'active' },
-  { id: 'CLI-003', name: 'Vikram Singh', company: 'EcoVentures', email: 'vikram@ecov.in', phone: '+91 76543 21098', type: 'corporate', locations: 1, plants: 18, subscription: 'trial' },
-  { id: 'CLI-004', name: 'Priya Nair', company: 'Wellness Hub', email: 'priya@wellnesshub.com', phone: '+91 65432 10987', type: 'hospitality', locations: 4, plants: 68, subscription: 'active' },
-  { id: 'CLI-005', name: 'Amit Joshi', company: 'Metro Living', email: 'amit@metroliving.in', phone: '+91 54321 09876', type: 'residential', locations: 1, plants: 12, subscription: 'active' },
-  { id: 'CLI-006', name: 'Sunita Rao', company: 'Govt. Municipal Corp', email: 'sunita@gmc.gov.in', phone: '+91 43210 98765', type: 'government', locations: 6, plants: 124, subscription: 'active' },
-  { id: 'CLI-007', name: 'Kiran Patel', company: 'StartUp Valley', email: 'kiran@startupv.io', phone: '+91 32109 87654', type: 'corporate', locations: 1, plants: 8, subscription: 'expired' },
-  { id: 'CLI-008', name: 'Deepak Kumar', company: 'Regal Hotels', email: 'deepak@regal.com', phone: '+91 21098 76543', type: 'hospitality', locations: 5, plants: 95, subscription: 'active' },
-  { id: 'CLI-009', name: 'Meera Shah', company: 'InfoSys Garden', email: 'meera@infosys.com', phone: '+91 10987 65432', type: 'corporate', locations: 2, plants: 38, subscription: 'active' },
-  { id: 'CLI-010', name: 'Arjun Reddy', company: 'Palm Residences', email: 'arjun@palmres.in', phone: '+91 09876 54321', type: 'residential', locations: 1, plants: 15, subscription: 'cancelled' },
-];
-
-/* -------------------------------------------------------------------------- */
 /*  Component                                                                 */
 /* -------------------------------------------------------------------------- */
 
-export function ClientTable({ clients = DEFAULT_CLIENTS, pageSize = 8 }: ClientTableProps) {
+export function ClientTable({ clients = [], pageSize = 8 }: ClientTableProps) {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(0);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
@@ -92,7 +75,7 @@ export function ClientTable({ clients = DEFAULT_CLIENTS, pageSize = 8 }: ClientT
     );
   }, [clients, search]);
 
-  const totalPages = Math.ceil(filtered.length / pageSize);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const paginated = filtered.slice(page * pageSize, (page + 1) * pageSize);
 
   return (
@@ -134,6 +117,14 @@ export function ClientTable({ clients = DEFAULT_CLIENTS, pageSize = 8 }: ClientT
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100/80 dark:divide-white/5">
+            {paginated.length === 0 && (
+              <tr>
+                <td colSpan={7} className="px-5 py-10 text-center">
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-200">No clients found</p>
+                  <p className="mt-1 text-xs text-gray-500">Client records will appear from live organization data.</p>
+                </td>
+              </tr>
+            )}
             {paginated.map((client) => {
               const typeBadge = TYPE_STYLES[client.type];
               const subBadge = SUB_STYLES[client.subscription];
@@ -203,6 +194,8 @@ export function ClientTable({ clients = DEFAULT_CLIENTS, pageSize = 8 }: ClientT
                         onClick={() =>
                           setOpenDropdown(openDropdown === client.id ? null : client.id)
                         }
+                        aria-label={`Open actions for ${client.name}`}
+                        title={`Open actions for ${client.name}`}
                         className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-white/5"
                       >
                         <MoreHorizontal className="h-4 w-4" />
@@ -234,13 +227,15 @@ export function ClientTable({ clients = DEFAULT_CLIENTS, pageSize = 8 }: ClientT
       {/* Pagination */}
       <div className="flex items-center justify-between border-t border-gray-200/60 px-5 py-3 dark:border-white/5">
         <p className="text-xs text-gray-500 dark:text-gray-400">
-          Showing {page * pageSize + 1}-{Math.min((page + 1) * pageSize, filtered.length)} of{' '}
+          Showing {filtered.length === 0 ? 0 : page * pageSize + 1}-{Math.min((page + 1) * pageSize, filtered.length)} of{' '}
           {filtered.length} clients
         </p>
         <div className="flex items-center gap-1">
           <button
             onClick={() => setPage(Math.max(0, page - 1))}
             disabled={page === 0}
+            aria-label="Previous page"
+            title="Previous page"
             className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 disabled:opacity-40 dark:hover:bg-white/5"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -262,6 +257,8 @@ export function ClientTable({ clients = DEFAULT_CLIENTS, pageSize = 8 }: ClientT
           <button
             onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
             disabled={page >= totalPages - 1}
+            aria-label="Next page"
+            title="Next page"
             className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 disabled:opacity-40 dark:hover:bg-white/5"
           >
             <ChevronRight className="h-4 w-4" />

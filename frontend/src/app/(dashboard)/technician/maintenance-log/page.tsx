@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Clock,
@@ -12,15 +12,34 @@ import {
   Plus,
   MessageSquare,
   X,
+  Loader2,
 } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
+import api from '@/services/api';
+import { useQuery } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
 
-/* -------------------------------------------------------------------------- */
-/*  Types                                                                      */
-/* -------------------------------------------------------------------------- */
-
 type LogStatus = 'completed' | 'partial' | 'skipped';
+
+interface ApiEnvelope<T> {
+  success: boolean;
+  data: T;
+}
+
+interface VisitApi {
+  id: string;
+  status: string;
+  scheduledDate: string;
+  notes?: string | null;
+  plant?: {
+    location?: {
+      name?: string;
+      client?: {
+        companyName?: string;
+      };
+    };
+  };
+}
 
 interface MaintenanceEntry {
   id: string;
@@ -34,52 +53,93 @@ interface MaintenanceEntry {
   notes: string;
 }
 
-/* -------------------------------------------------------------------------- */
-/*  Mock Data                                                                  */
-/* -------------------------------------------------------------------------- */
-
-const todayEntries: MaintenanceEntry[] = [
-  { id: 'ML-001', date: '2026-03-15', time: '09:00 AM', location: 'TechCorp HQ, Floor 3', client: 'Rahul Mehta', plantsServiced: 15, duration: '1h 20m', status: 'completed', notes: 'All plants in good condition. Repotted 2 Monstera. Applied fertilizer to ferns.' },
-  { id: 'ML-002', date: '2026-03-15', time: '10:45 AM', location: 'TechCorp HQ, Lobby', client: 'Rahul Mehta', plantsServiced: 8, duration: '45m', status: 'completed', notes: 'Replaced 1 Peace Lily showing root rot. Adjusted watering schedule for indoor palms.' },
-  { id: 'ML-003', date: '2026-03-15', time: '12:30 PM', location: 'GreenSpace Office', client: 'Anita Desai', plantsServiced: 20, duration: '1h 30m', status: 'completed', notes: 'Pruned all trailing plants. Applied neem oil to 3 plants showing pest signs.' },
-];
-
-const fullLog: MaintenanceEntry[] = [
-  ...todayEntries,
-  { id: 'ML-004', date: '2026-03-14', time: '09:30 AM', location: 'Regal Hotel Lobby', client: 'Deepak Kumar', plantsServiced: 35, duration: '2h 15m', status: 'completed', notes: 'Deep cleaned all planters. Replaced soil for 5 plants.' },
-  { id: 'ML-005', date: '2026-03-14', time: '02:00 PM', location: 'InfoSys Atrium', client: 'Meera Shah', plantsServiced: 18, duration: '1h', status: 'completed', notes: 'Routine maintenance. All plants healthy.' },
-  { id: 'ML-006', date: '2026-03-13', time: '09:00 AM', location: 'Mumbai HQ, Floor 5', client: 'Rahul Mehta', plantsServiced: 12, duration: '50m', status: 'partial', notes: 'Could not access server room area. Completed rest of floor.' },
-  { id: 'ML-007', date: '2026-03-13', time: '11:30 AM', location: 'Metro Living, Residence', client: 'Amit Joshi', plantsServiced: 12, duration: '40m', status: 'completed', notes: 'Pruned balcony plants. Applied growth hormones to bougainvillea.' },
-  { id: 'ML-008', date: '2026-03-12', time: '09:00 AM', location: 'Wellness Hub', client: 'Sunita Rao', plantsServiced: 25, duration: '1h 45m', status: 'completed', notes: 'Full quarterly assessment completed. Updated plant tags.' },
-  { id: 'ML-009', date: '2026-03-12', time: '02:30 PM', location: 'StartUp Valley', client: 'Kiran Patel', plantsServiced: 8, duration: '30m', status: 'skipped', notes: 'Office closed for renovation. Rescheduled to next week.' },
-  { id: 'ML-010', date: '2026-03-11', time: '10:00 AM', location: 'Palm Residences', client: 'Green Valley', plantsServiced: 30, duration: '2h', status: 'completed', notes: 'Seasonal plant swap for 10 units. Installed new planters in lobby.' },
-];
-
 const STATUS_STYLES: Record<LogStatus, { label: string; className: string }> = {
-  completed: { label: 'Completed', className: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' },
-  partial: { label: 'Partial', className: 'bg-amber-500/10 text-amber-700 dark:text-amber-400' },
-  skipped: { label: 'Skipped', className: 'bg-gray-500/10 text-gray-700 dark:text-gray-400' },
+  completed: {
+    label: 'Completed',
+    className: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
+  },
+  partial: {
+    label: 'Partial',
+    className: 'bg-amber-500/10 text-amber-700 dark:text-amber-400',
+  },
+  skipped: {
+    label: 'Skipped',
+    className: 'bg-gray-500/10 text-gray-700 dark:text-gray-400',
+  },
 };
 
-/* -------------------------------------------------------------------------- */
-/*  Page                                                                       */
-/* -------------------------------------------------------------------------- */
+function normalizeStatus(value: string): LogStatus {
+  const status = value.toLowerCase();
+  if (status.includes('complete')) return 'completed';
+  if (status.includes('miss') || status.includes('cancel')) return 'skipped';
+  return 'partial';
+}
 
 export default function TechnicianMaintenanceLogPage() {
   const [showNewEntry, setShowNewEntry] = useState(false);
 
-  const weekVisitsCompleted = fullLog.filter(
-    (e) => e.date >= '2026-03-10' && e.date <= '2026-03-16' && e.status === 'completed',
-  ).length;
-  const weekPlantsMaintained = fullLog
-    .filter((e) => e.date >= '2026-03-10' && e.date <= '2026-03-16')
-    .reduce((sum, e) => sum + e.plantsServiced, 0);
+  const visitsQuery = useQuery({
+    queryKey: ['technician', 'maintenance', 'logs'],
+    queryFn: async () => {
+      const response = await api.get<ApiEnvelope<VisitApi[]> & { pagination?: unknown }>('/service-visits', {
+        params: {
+          page: 1,
+          limit: 300,
+          sortBy: 'scheduledDate',
+          sortOrder: 'desc',
+        },
+      });
+
+      return response.data ?? [];
+    },
+    staleTime: 60 * 1000,
+  });
+
+  const fullLog = useMemo<MaintenanceEntry[]>(
+    () =>
+      (visitsQuery.data ?? []).map((visit) => ({
+        id: visit.id,
+        date: visit.scheduledDate,
+        time: new Date(visit.scheduledDate).toLocaleTimeString('en-IN', {
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+        location: visit.plant?.location?.name || 'Site location',
+        client: visit.plant?.location?.client?.companyName || 'Client account',
+        plantsServiced: 1,
+        duration: '1h',
+        status: normalizeStatus(visit.status),
+        notes: visit.notes || 'No visit notes submitted.',
+      })),
+    [visitsQuery.data],
+  );
+
+  const today = new Date().toDateString();
+
+  const todayEntries = useMemo(
+    () => fullLog.filter((entry) => new Date(entry.date).toDateString() === today),
+    [fullLog, today],
+  );
+
+  const weekStart = useMemo(() => {
+    const date = new Date();
+    date.setDate(date.getDate() - 6);
+    return date;
+  }, []);
+
+  const weekEntries = useMemo(
+    () => fullLog.filter((entry) => new Date(entry.date) >= weekStart),
+    [fullLog, weekStart],
+  );
+
+  const weekVisitsCompleted = weekEntries.filter((entry) => entry.status === 'completed').length;
+  const weekPlantsMaintained = weekEntries.reduce((sum, entry) => sum + entry.plantsServiced, 0);
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Maintenance Log"
-        description="Track and record your maintenance activities."
+        description="Track and review your completed maintenance activities."
         breadcrumbs={[
           { label: 'Technician', href: '/technician' },
           { label: 'Maintenance Log' },
@@ -95,7 +155,19 @@ export default function TechnicianMaintenanceLogPage() {
         }
       />
 
-      {/* New Entry Form */}
+      {visitsQuery.isLoading && (
+        <div className="flex items-center gap-2 rounded-2xl border border-gray-200/70 bg-white/80 px-4 py-3 text-sm text-gray-600 dark:border-white/10 dark:bg-gray-900/40 dark:text-gray-300">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Loading maintenance logs...
+        </div>
+      )}
+
+      {visitsQuery.isError && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-200">
+          Unable to load maintenance logs right now.
+        </div>
+      )}
+
       <AnimatePresence>
         {showNewEntry && (
           <motion.div
@@ -107,7 +179,7 @@ export default function TechnicianMaintenanceLogPage() {
             <div className="rounded-2xl border border-emerald-200/60 bg-emerald-50/30 p-6 dark:border-emerald-500/20 dark:bg-emerald-500/5">
               <div className="mb-4 flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-gray-900 dark:text-white">New Maintenance Entry</h3>
-                <button onClick={() => setShowNewEntry(false)} className="text-gray-400 hover:text-gray-600">
+                <button onClick={() => setShowNewEntry(false)} className="text-gray-400 hover:text-gray-600" title="Close new entry form">
                   <X className="h-4 w-4" />
                 </button>
               </div>
@@ -134,7 +206,7 @@ export default function TechnicianMaintenanceLogPage() {
                 </div>
               </div>
               <div className="mt-4 flex justify-end">
-                <button className="rounded-xl bg-emerald-500 px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-600">
+                <button className="rounded-xl bg-emerald-500 px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-600" disabled>
                   Save Entry
                 </button>
               </div>
@@ -143,18 +215,35 @@ export default function TechnicianMaintenanceLogPage() {
         )}
       </AnimatePresence>
 
-      {/* Week Summary Stats */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {[
-          { icon: CheckCircle, label: 'Visits Completed', value: `${weekVisitsCompleted}`, color: 'text-emerald-600', bg: 'bg-emerald-500/10' },
-          { icon: Sprout, label: 'Plants Maintained', value: `${weekPlantsMaintained}`, color: 'text-green-600', bg: 'bg-green-500/10' },
-          { icon: Star, label: 'Avg Rating', value: '4.8', color: 'text-violet-600', bg: 'bg-violet-500/10' },
-        ].map((stat, i) => (
+          {
+            icon: CheckCircle,
+            label: 'Visits Completed',
+            value: `${weekVisitsCompleted}`,
+            color: 'text-emerald-600',
+            bg: 'bg-emerald-500/10',
+          },
+          {
+            icon: Sprout,
+            label: 'Plants Maintained',
+            value: `${weekPlantsMaintained}`,
+            color: 'text-green-600',
+            bg: 'bg-green-500/10',
+          },
+          {
+            icon: Star,
+            label: 'Completion Rate',
+            value: `${weekEntries.length > 0 ? Math.round((weekVisitsCompleted / weekEntries.length) * 100) : 0}%`,
+            color: 'text-violet-600',
+            bg: 'bg-violet-500/10',
+          },
+        ].map((stat, index) => (
           <motion.div
             key={stat.label}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.08 }}
+            transition={{ delay: index * 0.08 }}
             className="rounded-2xl border border-gray-200/60 bg-white/80 p-5 backdrop-blur-xl dark:border-white/5 dark:bg-gray-900/50"
           >
             <div className={cn('mb-3 inline-flex rounded-xl p-2.5', stat.bg)}>
@@ -162,23 +251,20 @@ export default function TechnicianMaintenanceLogPage() {
             </div>
             <p className="text-sm text-gray-500 dark:text-gray-400">{stat.label}</p>
             <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">{stat.value}</p>
-            <p className="mt-0.5 text-xs text-gray-400">This week (Mar 10-16)</p>
+            <p className="mt-0.5 text-xs text-gray-400">Last 7 days</p>
           </motion.div>
         ))}
       </div>
 
-      {/* Today's Completed Visits */}
       <div>
-        <h3 className="mb-3 text-sm font-semibold text-gray-900 dark:text-white">
-          Today&apos;s Completed Visits
-        </h3>
+        <h3 className="mb-3 text-sm font-semibold text-gray-900 dark:text-white">Today Completed Visits</h3>
         <div className="space-y-3">
-          {todayEntries.map((entry, i) => (
+          {todayEntries.map((entry, index) => (
             <motion.div
               key={entry.id}
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.05 }}
+              transition={{ delay: index * 0.05 }}
               className="rounded-2xl border border-gray-200/60 bg-white/80 p-4 backdrop-blur-xl dark:border-white/5 dark:bg-gray-900/50"
             >
               <div className="flex flex-wrap items-start gap-4">
@@ -192,7 +278,7 @@ export default function TechnicianMaintenanceLogPage() {
                   </div>
                 </div>
 
-                <div className="flex-1 min-w-0">
+                <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
                     <span className="flex items-center gap-1">
                       <MapPin className="h-3 w-3" />
@@ -215,10 +301,15 @@ export default function TechnicianMaintenanceLogPage() {
               </div>
             </motion.div>
           ))}
+
+          {todayEntries.length === 0 && !visitsQuery.isLoading && (
+            <div className="rounded-2xl border border-dashed border-gray-200 px-4 py-8 text-center text-sm text-gray-500 dark:border-white/10 dark:text-gray-400">
+              No completed visits logged today.
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Full Log Table */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -242,13 +333,19 @@ export default function TechnicianMaintenanceLogPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50 dark:divide-white/5">
-              {fullLog.map((entry, _i) => {
+              {fullLog.map((entry) => {
                 const status = STATUS_STYLES[entry.status];
+
                 return (
                   <tr key={entry.id} className="transition-colors hover:bg-gray-50/50 dark:hover:bg-white/[0.02]">
                     <td className="px-6 py-3 text-sm text-gray-900 dark:text-white">
                       <div>
-                        <p className="font-medium">{new Date(entry.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</p>
+                        <p className="font-medium">
+                          {new Date(entry.date).toLocaleDateString('en-IN', {
+                            day: '2-digit',
+                            month: 'short',
+                          })}
+                        </p>
                         <p className="text-[10px] text-gray-400">{entry.time}</p>
                       </div>
                     </td>
@@ -261,7 +358,7 @@ export default function TechnicianMaintenanceLogPage() {
                         {status.label}
                       </span>
                     </td>
-                    <td className="max-w-[200px] px-6 py-3 text-xs text-gray-500 truncate">{entry.notes}</td>
+                    <td className="max-w-[220px] truncate px-6 py-3 text-xs text-gray-500">{entry.notes}</td>
                   </tr>
                 );
               })}

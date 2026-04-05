@@ -334,10 +334,7 @@ export function BenefitsSection() {
       <motion.div
         animate={{ opacity: [0.4, 0.6, 0.4], scale: [1, 1.05, 1] }}
         transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut' }}
-        className="absolute -left-[10%] -top-[5%] h-[600px] w-[600px] rounded-full opacity-[0.06]"
-        style={{
-          background: 'radial-gradient(circle, rgba(16,185,129,0.4) 0%, rgba(5,150,105,0.2) 50%, transparent 70%)',
-        }}
+        className="benefits-orb-radial absolute -left-[10%] -top-[5%] h-[600px] w-[600px] rounded-full opacity-[0.06]"
       />
 
       <div

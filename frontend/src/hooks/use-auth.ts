@@ -16,6 +16,16 @@ import type { LoginRequest, RegisterRequest } from '@/types';
 type LoginCredentials = LoginRequest;
 type RegisterData = RegisterRequest;
 
+function getRoleHomePath(role?: string): string {
+  const normalized = role?.toUpperCase();
+
+  if (normalized === 'ADMIN' || normalized === 'SUPER_ADMIN') return '/admin';
+  if (normalized === 'PARTNER') return '/partner';
+  if (normalized === 'TECHNICIAN') return '/technician';
+
+  return '/client';
+}
+
 export function useAuth() {
   const router = useRouter();
   const {
@@ -44,7 +54,7 @@ export function useAuth() {
           response.tokens.accessToken,
           response.tokens.refreshToken
         );
-        router.push('/dashboard');
+        router.push(getRoleHomePath(response.user?.role));
         return response;
       } catch (error) {
         setLoading(false);
@@ -67,7 +77,7 @@ export function useAuth() {
           response.tokens.accessToken,
           response.tokens.refreshToken
         );
-        router.push('/dashboard');
+        router.push(getRoleHomePath(response.user?.role));
         return response;
       } catch (error) {
         setLoading(false);

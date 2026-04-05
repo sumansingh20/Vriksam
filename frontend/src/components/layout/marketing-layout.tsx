@@ -135,14 +135,7 @@ export function MarketingLayout({
       <FloatingParticles />
 
       {/* Subtle grid background */}
-      <div
-        className="pointer-events-none fixed inset-0 z-0 opacity-[0.015] dark:opacity-[0.03]"
-        style={{
-          backgroundImage:
-            "linear-gradient(rgba(16,185,129,1) 1px, transparent 1px), linear-gradient(90deg, rgba(16,185,129,1) 1px, transparent 1px)",
-          backgroundSize: "80px 80px",
-        }}
-      />
+      <div className="pointer-events-none fixed inset-0 z-0 marketing-grid-overlay opacity-[0.12] dark:opacity-[0.24]" />
 
       {/* Navbar */}
       {!hideNavbar && <Navbar />}

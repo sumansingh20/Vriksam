@@ -1,23 +1,53 @@
 'use client';
 
+import Link from 'next/link';
+import { useMemo } from 'react';
 import { motion } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
 import {
-  UserPlus,
+  RefreshCw,
   Star,
   MapPin,
   Phone,
   Calendar,
   CheckCircle2,
   Zap,
+  Loader2,
+  AlertTriangle,
 } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
+import api from '@/services/api';
 import { cn } from '@/lib/utils';
 
-/* -------------------------------------------------------------------------- */
-/*  Types                                                                      */
-/* -------------------------------------------------------------------------- */
+interface ApiEnvelope<T> {
+  success: boolean;
+  data: T;
+}
 
-interface Technician {
+interface TechnicianRow {
+  id: string;
+  isAvailable: boolean;
+  specialization?: string | null;
+  activeZones?: string[];
+  rating?: number;
+  user?: {
+    name?: string;
+    phone?: string;
+    email?: string;
+  };
+}
+
+interface VisitRow {
+  id: string;
+  technicianId: string;
+  status: string;
+  scheduledDate: string;
+  completedDate?: string | null;
+}
+
+type AvailabilityStatus = 'Available' | 'On Route' | 'Off Duty';
+
+interface TechnicianCardRow {
   id: string;
   name: string;
   initials: string;
@@ -25,7 +55,7 @@ interface Technician {
   rating: number;
   activeVisitsToday: number;
   completedThisWeek: number;
-  availability: 'Available' | 'On Route' | 'Off Duty';
+  availability: AvailabilityStatus;
   zone: string;
   phone: string;
   avatarBg: string;
@@ -40,58 +70,17 @@ interface PerformanceRow {
   efficiency: number;
 }
 
-/* -------------------------------------------------------------------------- */
-/*  Mock Data                                                                  */
-/* -------------------------------------------------------------------------- */
-
-const technicians: Technician[] = [
-  {
-    id: '1', name: 'Raj Patel', initials: 'RP', specialization: 'Indoor Plants & Hydroponics',
-    rating: 4.9, activeVisitsToday: 3, completedThisWeek: 14, availability: 'On Route',
-    zone: 'Mumbai - Central', phone: '+91 98765 43210', avatarBg: 'from-emerald-400 to-green-600',
-  },
-  {
-    id: '2', name: 'Priya Sharma', initials: 'PS', specialization: 'Tropical & Exotic Plants',
-    rating: 4.9, activeVisitsToday: 2, completedThisWeek: 12, availability: 'Available',
-    zone: 'Bangalore - North', phone: '+91 98765 43211', avatarBg: 'from-teal-400 to-cyan-600',
-  },
-  {
-    id: '3', name: 'Deepak Nair', initials: 'DN', specialization: 'Pest Control & Plant Health',
-    rating: 4.8, activeVisitsToday: 1, completedThisWeek: 11, availability: 'Available',
-    zone: 'Hyderabad - Hitech City', phone: '+91 98765 43212', avatarBg: 'from-violet-400 to-purple-600',
-  },
-  {
-    id: '4', name: 'Sneha Reddy', initials: 'SR', specialization: 'Landscaping & Outdoor Plants',
-    rating: 4.7, activeVisitsToday: 2, completedThisWeek: 10, availability: 'On Route',
-    zone: 'Pune - Hinjewadi', phone: '+91 98765 43213', avatarBg: 'from-sky-400 to-blue-600',
-  },
-  {
-    id: '5', name: 'Amit Kumar', initials: 'AK', specialization: 'Succulents & Cacti',
-    rating: 4.6, activeVisitsToday: 0, completedThisWeek: 9, availability: 'Off Duty',
-    zone: 'Delhi - South', phone: '+91 98765 43214', avatarBg: 'from-amber-400 to-orange-600',
-  },
-  {
-    id: '6', name: 'Anita Desai', initials: 'AD', specialization: 'Vertical Gardens & Green Walls',
-    rating: 4.8, activeVisitsToday: 1, completedThisWeek: 13, availability: 'Available',
-    zone: 'Mumbai - Navi Mumbai', phone: '+91 98765 43215', avatarBg: 'from-rose-400 to-red-600',
-  },
+const AVATAR_GRADIENTS = [
+  'from-emerald-400 to-green-600',
+  'from-teal-400 to-cyan-600',
+  'from-violet-400 to-purple-600',
+  'from-sky-400 to-blue-600',
+  'from-amber-400 to-orange-600',
+  'from-rose-400 to-red-600',
 ];
 
-const performanceData: PerformanceRow[] = [
-  { id: '1', name: 'Raj Patel', visitsMonth: 56, avgRating: 4.9, plantsMaintained: 420, efficiency: 97 },
-  { id: '2', name: 'Priya Sharma', visitsMonth: 52, avgRating: 4.9, plantsMaintained: 388, efficiency: 95 },
-  { id: '6', name: 'Anita Desai', visitsMonth: 50, avgRating: 4.8, plantsMaintained: 375, efficiency: 96 },
-  { id: '3', name: 'Deepak Nair', visitsMonth: 48, avgRating: 4.8, plantsMaintained: 340, efficiency: 93 },
-  { id: '4', name: 'Sneha Reddy', visitsMonth: 44, avgRating: 4.7, plantsMaintained: 310, efficiency: 91 },
-  { id: '5', name: 'Amit Kumar', visitsMonth: 38, avgRating: 4.6, plantsMaintained: 280, efficiency: 89 },
-];
-
-/* -------------------------------------------------------------------------- */
-/*  Helper Components                                                          */
-/* -------------------------------------------------------------------------- */
-
-function AvailabilityBadge({ status }: { status: string }) {
-  const config: Record<string, { classes: string; dot: string }> = {
+function AvailabilityBadge({ status }: { status: AvailabilityStatus }) {
+  const config: Record<AvailabilityStatus, { classes: string; dot: string }> = {
     Available: {
       classes: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400',
       dot: 'bg-emerald-500',
@@ -105,136 +94,282 @@ function AvailabilityBadge({ status }: { status: string }) {
       dot: 'bg-gray-400',
     },
   };
-  const { classes, dot } = (config[status] ?? config.Available)!;
 
   return (
-    <span className={cn('inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold', classes)}>
-      <span className={cn('h-1.5 w-1.5 rounded-full', dot)} />
+    <span className={cn('inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold', config[status].classes)}>
+      <span className={cn('h-1.5 w-1.5 rounded-full', config[status].dot)} />
       {status}
     </span>
   );
 }
 
 function StarRating({ rating }: { rating: number }) {
-  const full = Math.floor(rating);
-  const hasHalf = rating - full >= 0.5;
+  const safeRating = Math.max(0, Math.min(5, rating));
+  const full = Math.floor(safeRating);
+  const hasHalf = safeRating - full >= 0.5;
 
   return (
     <div className="flex items-center gap-0.5">
-      {Array.from({ length: 5 }).map((_, i) => (
+      {Array.from({ length: 5 }).map((_, index) => (
         <Star
-          key={i}
+          key={index}
           className={cn(
             'h-3.5 w-3.5',
-            i < full
+            index < full
               ? 'fill-amber-400 text-amber-400'
-              : i === full && hasHalf
+              : index === full && hasHalf
                 ? 'fill-amber-400/50 text-amber-400'
                 : 'text-gray-200 dark:text-gray-600',
           )}
         />
       ))}
-      <span className="ml-1 text-xs font-semibold text-gray-700 dark:text-gray-300">{rating}</span>
+      <span className="ml-1 text-xs font-semibold text-gray-700 dark:text-gray-300">{safeRating.toFixed(1)}</span>
     </div>
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/*  Page                                                                       */
-/* -------------------------------------------------------------------------- */
+function isSameDay(value: string, reference: Date) {
+  return new Date(value).toDateString() === reference.toDateString();
+}
 
 export default function PartnerTechniciansPage() {
+  const techniciansQuery = useQuery({
+    queryKey: ['partner', 'technicians', 'list'],
+    queryFn: async () => {
+      const response = await api.get<ApiEnvelope<TechnicianRow[]> & { pagination?: unknown }>(
+        '/technicians',
+        {
+          params: {
+            page: 1,
+            limit: 200,
+            sortBy: 'createdAt',
+            sortOrder: 'desc',
+          },
+        },
+      );
+
+      return response.data ?? [];
+    },
+    staleTime: 60 * 1000,
+  });
+
+  const visitsQuery = useQuery({
+    queryKey: ['partner', 'technicians', 'visit-stats'],
+    queryFn: async () => {
+      const response = await api.get<ApiEnvelope<VisitRow[]> & { pagination?: unknown }>(
+        '/service-visits',
+        {
+          params: {
+            page: 1,
+            limit: 700,
+            sortBy: 'scheduledDate',
+            sortOrder: 'desc',
+          },
+        },
+      );
+
+      return response.data ?? [];
+    },
+    staleTime: 60 * 1000,
+  });
+
+  const { technicians, performance } = useMemo(() => {
+    const today = new Date();
+    const weekAgo = new Date();
+    weekAgo.setDate(today.getDate() - 7);
+
+    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+
+    const activeToday = new Map<string, number>();
+    const completedThisWeek = new Map<string, number>();
+    const completedThisMonth = new Map<string, number>();
+    const assignedThisMonth = new Map<string, number>();
+
+    for (const visit of visitsQuery.data ?? []) {
+      if (visit.status === 'SCHEDULED' || visit.status === 'IN_PROGRESS') {
+        if (isSameDay(visit.scheduledDate, today)) {
+          activeToday.set(visit.technicianId, (activeToday.get(visit.technicianId) ?? 0) + 1);
+        }
+      }
+
+      const completedDate = visit.completedDate ? new Date(visit.completedDate) : null;
+      if (visit.status === 'COMPLETED' && completedDate && completedDate >= weekAgo) {
+        completedThisWeek.set(visit.technicianId, (completedThisWeek.get(visit.technicianId) ?? 0) + 1);
+      }
+
+      const scheduledDate = new Date(visit.scheduledDate);
+      if (scheduledDate >= monthStart) {
+        assignedThisMonth.set(visit.technicianId, (assignedThisMonth.get(visit.technicianId) ?? 0) + 1);
+      }
+
+      if (visit.status === 'COMPLETED' && completedDate && completedDate >= monthStart) {
+        completedThisMonth.set(visit.technicianId, (completedThisMonth.get(visit.technicianId) ?? 0) + 1);
+      }
+    }
+
+    const techRows: TechnicianCardRow[] = (techniciansQuery.data ?? []).map((technician, index) => {
+      const name = technician.user?.name || 'Unassigned Technician';
+      const initials = name
+        .split(' ')
+        .map((part) => part[0])
+        .join('')
+        .slice(0, 2)
+        .toUpperCase();
+
+      const activeVisits = activeToday.get(technician.id) ?? 0;
+      const completedWeek = completedThisWeek.get(technician.id) ?? 0;
+
+      const availability: AvailabilityStatus = !technician.isAvailable
+        ? 'Off Duty'
+        : activeVisits > 0
+          ? 'On Route'
+          : 'Available';
+
+      const avatarBg =
+        AVATAR_GRADIENTS[index % AVATAR_GRADIENTS.length] || 'from-emerald-400 to-green-600';
+
+      return {
+        id: technician.id,
+        name,
+        initials,
+        specialization: technician.specialization || 'General Plant Care',
+        rating: typeof technician.rating === 'number' ? technician.rating : 0,
+        activeVisitsToday: activeVisits,
+        completedThisWeek: completedWeek,
+        availability,
+        zone: technician.activeZones?.[0] || 'Unassigned zone',
+        phone: technician.user?.phone || 'Not provided',
+        avatarBg,
+      };
+    });
+
+    const performanceRows: PerformanceRow[] = techRows
+      .map((technician) => {
+        const monthVisits = completedThisMonth.get(technician.id) ?? 0;
+        const totalAssigned = assignedThisMonth.get(technician.id) ?? 0;
+        const efficiency = totalAssigned > 0 ? Math.round((monthVisits / totalAssigned) * 100) : 0;
+
+        return {
+          id: technician.id,
+          name: technician.name,
+          visitsMonth: monthVisits,
+          avgRating: technician.rating,
+          plantsMaintained: monthVisits,
+          efficiency,
+        };
+      })
+      .sort((a, b) => b.visitsMonth - a.visitsMonth);
+
+    return { technicians: techRows, performance: performanceRows };
+  }, [techniciansQuery.data, visitsQuery.data]);
+
+  const isLoading = techniciansQuery.isLoading || visitsQuery.isLoading;
+  const hasError = techniciansQuery.isError || visitsQuery.isError;
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Technician Team"
-        description="Manage your technicians, view performance, and assign tasks."
+        description="Manage your technicians and monitor live workload and performance."
         breadcrumbs={[
-          { label: 'Partner', href: '/dashboard/partner' },
+          { label: 'Partner', href: '/partner' },
           { label: 'Technicians' },
         ]}
         actions={
-          <button className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 transition-shadow hover:shadow-emerald-500/40">
-            <UserPlus className="h-4 w-4" />
-            Add Technician
+          <button
+            type="button"
+            onClick={() => {
+              techniciansQuery.refetch();
+              visitsQuery.refetch();
+            }}
+            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 transition-shadow hover:shadow-emerald-500/40"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Refresh Team Data
           </button>
         }
       />
 
-      {/* Technician Cards Grid */}
+      {isLoading && (
+        <div className="flex items-center gap-2 rounded-2xl border border-gray-200/70 bg-white/80 px-4 py-3 text-sm text-gray-600 dark:border-white/10 dark:bg-gray-900/40 dark:text-gray-300">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Loading live technician performance...
+        </div>
+      )}
+
+      {hasError && (
+        <div className="flex items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-200">
+          <AlertTriangle className="h-4 w-4" />
+          Unable to load technicians right now.
+        </div>
+      )}
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {technicians.map((tech, index) => (
+        {technicians.map((technician, index) => (
           <motion.div
-            key={tech.id}
+            key={technician.id}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.08 }}
             className="group relative overflow-hidden rounded-2xl border border-gray-200/60 bg-white/80 p-5 backdrop-blur-xl transition-shadow hover:shadow-lg hover:shadow-emerald-500/5 dark:border-white/5 dark:bg-gray-900/50"
           >
-            {/* Top Section */}
             <div className="flex items-start gap-4">
-              {/* Avatar */}
-              <div className={cn('flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-lg font-bold text-white shadow-lg', tech.avatarBg)}>
-                {tech.initials}
+              <div className={cn('flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-lg font-bold text-white shadow-lg', technician.avatarBg)}>
+                {technician.initials}
               </div>
               <div className="min-w-0 flex-1">
-                <div className="flex items-start justify-between">
+                <div className="flex items-start justify-between gap-3">
                   <div>
-                    <h4 className="text-sm font-semibold text-gray-900 dark:text-white">{tech.name}</h4>
-                    <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{tech.specialization}</p>
+                    <h4 className="text-sm font-semibold text-gray-900 dark:text-white">{technician.name}</h4>
+                    <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{technician.specialization}</p>
                   </div>
-                  <AvailabilityBadge status={tech.availability} />
+                  <AvailabilityBadge status={technician.availability} />
                 </div>
                 <div className="mt-2">
-                  <StarRating rating={tech.rating} />
+                  <StarRating rating={technician.rating} />
                 </div>
               </div>
             </div>
 
-            {/* Stats Row */}
             <div className="mt-4 grid grid-cols-2 gap-3">
               <div className="rounded-xl bg-gray-50/80 p-3 dark:bg-white/[0.03]">
                 <div className="flex items-center gap-1.5 text-[11px] text-gray-500">
                   <Calendar className="h-3 w-3" />
                   Active Today
                 </div>
-                <p className="mt-1 text-lg font-bold text-gray-900 dark:text-white">{tech.activeVisitsToday}</p>
+                <p className="mt-1 text-lg font-bold text-gray-900 dark:text-white">{technician.activeVisitsToday}</p>
               </div>
               <div className="rounded-xl bg-gray-50/80 p-3 dark:bg-white/[0.03]">
                 <div className="flex items-center gap-1.5 text-[11px] text-gray-500">
                   <CheckCircle2 className="h-3 w-3" />
                   This Week
                 </div>
-                <p className="mt-1 text-lg font-bold text-gray-900 dark:text-white">{tech.completedThisWeek}</p>
+                <p className="mt-1 text-lg font-bold text-gray-900 dark:text-white">{technician.completedThisWeek}</p>
               </div>
             </div>
 
-            {/* Zone & Contact */}
             <div className="mt-3 space-y-1.5">
               <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
                 <MapPin className="h-3 w-3 shrink-0" />
-                {tech.zone}
+                {technician.zone}
               </div>
               <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
                 <Phone className="h-3 w-3 shrink-0" />
-                {tech.phone}
+                {technician.phone}
               </div>
             </div>
 
-            {/* Quick Assign Button */}
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+            <Link
+              href={`/partner/maintenance?technicianId=${encodeURIComponent(technician.id)}`}
               className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 py-2 text-sm font-semibold text-emerald-700 transition-colors hover:bg-emerald-100 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400 dark:hover:bg-emerald-500/20"
             >
               <Zap className="h-3.5 w-3.5" />
-              Quick Assign
-            </motion.button>
+              Open Schedule
+            </Link>
           </motion.div>
         ))}
       </div>
 
-      {/* Performance Table */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -243,7 +378,7 @@ export default function PartnerTechniciansPage() {
       >
         <div className="border-b border-gray-100 px-5 py-4 dark:border-white/5">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Monthly Performance</h3>
-          <p className="mt-0.5 text-xs text-gray-500">Performance metrics for the current month</p>
+          <p className="mt-0.5 text-xs text-gray-500">Live performance metrics for the current month</p>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[700px]">
@@ -258,7 +393,7 @@ export default function PartnerTechniciansPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50 dark:divide-white/[0.03]">
-              {performanceData.map((row, index) => (
+              {performance.map((row, index) => (
                 <motion.tr
                   key={row.id}
                   initial={{ opacity: 0, x: -10 }}
@@ -280,7 +415,7 @@ export default function PartnerTechniciansPage() {
                   <td className="px-5 py-3.5 text-center">
                     <div className="flex items-center justify-center gap-1">
                       <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                      <span className="text-sm font-semibold text-gray-900 dark:text-white">{row.avgRating}</span>
+                      <span className="text-sm font-semibold text-gray-900 dark:text-white">{row.avgRating.toFixed(1)}</span>
                     </div>
                   </td>
                   <td className="px-5 py-3.5 text-center">
@@ -295,20 +430,39 @@ export default function PartnerTechniciansPage() {
                           transition={{ delay: 0.6 + index * 0.04, duration: 0.5 }}
                           className={cn(
                             'h-full rounded-full',
-                            row.efficiency >= 95 ? 'bg-emerald-500' : row.efficiency >= 90 ? 'bg-green-500' : 'bg-amber-500',
+                            row.efficiency >= 95
+                              ? 'bg-emerald-500'
+                              : row.efficiency >= 90
+                                ? 'bg-green-500'
+                                : 'bg-amber-500',
                           )}
                         />
                       </div>
-                      <span className={cn(
-                        'text-xs font-semibold',
-                        row.efficiency >= 95 ? 'text-emerald-600' : row.efficiency >= 90 ? 'text-green-600' : 'text-amber-600',
-                      )}>
+                      <span
+                        className={cn(
+                          'text-xs font-semibold',
+                          row.efficiency >= 95
+                            ? 'text-emerald-600'
+                            : row.efficiency >= 90
+                              ? 'text-green-600'
+                              : 'text-amber-600',
+                        )}
+                      >
                         {row.efficiency}%
                       </span>
                     </div>
                   </td>
                 </motion.tr>
               ))}
+
+              {performance.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-5 py-10 text-center">
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-200">No technician performance data</p>
+                    <p className="mt-1 text-xs text-gray-500">Performance metrics will appear from live visit logs.</p>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

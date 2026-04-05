@@ -7,15 +7,13 @@
 import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
 import analyticsService, {
   type AnalyticsFilters,
+  type OverviewStatsData,
+  type PlantMetricsData,
+  type RevenueMetricsData,
   type MaintenanceMetricsData,
+  type ESGMetricsData,
+  type TeamPerformanceData,
 } from '@/services/analytics.service';
-import type {
-  DashboardStats,
-  PlantAnalytics,
-  RevenueMetrics,
-  ESGMetrics,
-  TeamPerformance,
-} from '@/types';
 
 // -----------------------------------------------------------------------------
 // Query Keys
@@ -46,7 +44,7 @@ export const analyticsKeys = {
  */
 export function useOverviewStats(
   filters?: AnalyticsFilters,
-  options?: Omit<UseQueryOptions<DashboardStats>, 'queryKey' | 'queryFn'>
+  options?: Omit<UseQueryOptions<OverviewStatsData>, 'queryKey' | 'queryFn'>
 ) {
   return useQuery({
     queryKey: analyticsKeys.overview(filters),
@@ -62,7 +60,7 @@ export function useOverviewStats(
  */
 export function usePlantMetrics(
   filters?: AnalyticsFilters,
-  options?: Omit<UseQueryOptions<PlantAnalytics>, 'queryKey' | 'queryFn'>
+  options?: Omit<UseQueryOptions<PlantMetricsData>, 'queryKey' | 'queryFn'>
 ) {
   return useQuery({
     queryKey: analyticsKeys.plantMetrics(filters),
@@ -77,7 +75,7 @@ export function usePlantMetrics(
  */
 export function useRevenueData(
   filters?: AnalyticsFilters,
-  options?: Omit<UseQueryOptions<RevenueMetrics>, 'queryKey' | 'queryFn'>
+  options?: Omit<UseQueryOptions<RevenueMetricsData>, 'queryKey' | 'queryFn'>
 ) {
   return useQuery({
     queryKey: analyticsKeys.revenue(filters),
@@ -110,7 +108,7 @@ export function useMaintenanceMetrics(
  */
 export function useESGMetrics(
   filters?: AnalyticsFilters,
-  options?: Omit<UseQueryOptions<ESGMetrics>, 'queryKey' | 'queryFn'>
+  options?: Omit<UseQueryOptions<ESGMetricsData>, 'queryKey' | 'queryFn'>
 ) {
   return useQuery({
     queryKey: analyticsKeys.esg(filters),
@@ -125,7 +123,7 @@ export function useESGMetrics(
  */
 export function useTeamPerformance(
   filters?: AnalyticsFilters,
-  options?: Omit<UseQueryOptions<TeamPerformance>, 'queryKey' | 'queryFn'>
+  options?: Omit<UseQueryOptions<TeamPerformanceData>, 'queryKey' | 'queryFn'>
 ) {
   return useQuery({
     queryKey: analyticsKeys.team(filters),

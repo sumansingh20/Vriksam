@@ -249,10 +249,10 @@ export default function LoginPage() {
 
             <div className="mt-8 rounded-xl border border-dashed border-emerald-200 bg-emerald-50/50 px-4 py-3">
               <p className="text-center text-xs text-gray-500">
-                Demo: <span className="font-medium text-emerald-700">admin@vriksham.org</span> / <span className="font-medium text-emerald-700">Admin@123</span>
+                Use your assigned account credentials to sign in.
               </p>
               <p className="mt-1 text-center text-xs text-gray-400">
-                Also: user@vriksham.org / User@123 &middot; partner@vriksham.org / Partner@123
+                Contact your administrator if you need account access.
               </p>
             </div>
           </div>

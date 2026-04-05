@@ -53,31 +53,12 @@ const STAGE_STYLES: Record<GrowthStage, { label: string; className: string }> = 
 };
 
 /* -------------------------------------------------------------------------- */
-/*  Default mock data                                                         */
-/* -------------------------------------------------------------------------- */
-
-const DEFAULT_PLANTS: PlantRecord[] = [
-  { id: 'PLT-001', name: 'Peace Lily', species: 'Spathiphyllum', location: 'Mumbai HQ - Lobby', healthStatus: 'healthy', lastMaintenance: '2026-03-12', growthStage: 'mature' },
-  { id: 'PLT-002', name: 'Snake Plant', species: 'Dracaena trifasciata', location: 'Mumbai HQ - Floor 3', healthStatus: 'healthy', lastMaintenance: '2026-03-10', growthStage: 'established' },
-  { id: 'PLT-003', name: 'Fiddle Leaf Fig', species: 'Ficus lyrata', location: 'Bangalore Office', healthStatus: 'needs_attention', lastMaintenance: '2026-03-08', growthStage: 'growing' },
-  { id: 'PLT-004', name: 'Monstera', species: 'Monstera deliciosa', location: 'Delhi Campus', healthStatus: 'healthy', lastMaintenance: '2026-03-11', growthStage: 'mature' },
-  { id: 'PLT-005', name: 'Boston Fern', species: 'Nephrolepis exaltata', location: 'Hyderabad Tower', healthStatus: 'critical', lastMaintenance: '2026-03-05', growthStage: 'mature' },
-  { id: 'PLT-006', name: 'Rubber Plant', species: 'Ficus elastica', location: 'Pune SEZ', healthStatus: 'healthy', lastMaintenance: '2026-03-13', growthStage: 'established' },
-  { id: 'PLT-007', name: 'ZZ Plant', species: 'Zamioculcas zamiifolia', location: 'Chennai Office', healthStatus: 'healthy', lastMaintenance: '2026-03-09', growthStage: 'growing' },
-  { id: 'PLT-008', name: 'Pothos', species: 'Epipremnum aureum', location: 'Mumbai HQ - Floor 5', healthStatus: 'replaced', lastMaintenance: '2026-03-01', growthStage: 'seedling' },
-  { id: 'PLT-009', name: 'Areca Palm', species: 'Dypsis lutescens', location: 'Kolkata Mall', healthStatus: 'needs_attention', lastMaintenance: '2026-03-07', growthStage: 'mature' },
-  { id: 'PLT-010', name: 'Spider Plant', species: 'Chlorophytum comosum', location: 'Bangalore Office', healthStatus: 'healthy', lastMaintenance: '2026-03-14', growthStage: 'established' },
-  { id: 'PLT-011', name: 'Calathea', species: 'Calathea orbifolia', location: 'Delhi Campus', healthStatus: 'needs_attention', lastMaintenance: '2026-03-06', growthStage: 'growing' },
-  { id: 'PLT-012', name: 'Bamboo Palm', species: 'Chamaedorea seifrizii', location: 'Hyderabad Tower', healthStatus: 'healthy', lastMaintenance: '2026-03-13', growthStage: 'mature' },
-];
-
-/* -------------------------------------------------------------------------- */
 /*  Component                                                                 */
 /* -------------------------------------------------------------------------- */
 
 type SortField = 'id' | 'name' | 'species' | 'location' | 'healthStatus' | 'lastMaintenance' | 'growthStage';
 
-export function PlantTable({ plants = DEFAULT_PLANTS, pageSize = 8 }: PlantTableProps) {
+export function PlantTable({ plants = [], pageSize = 8 }: PlantTableProps) {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(0);
   const [sortField, setSortField] = useState<SortField>('id');
@@ -112,7 +93,7 @@ export function PlantTable({ plants = DEFAULT_PLANTS, pageSize = 8 }: PlantTable
     });
   }, [filtered, sortField, sortAsc]);
 
-  const totalPages = Math.ceil(sorted.length / pageSize);
+  const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
   const paginated = sorted.slice(page * pageSize, (page + 1) * pageSize);
 
   return (
@@ -167,6 +148,14 @@ export function PlantTable({ plants = DEFAULT_PLANTS, pageSize = 8 }: PlantTable
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100/80 dark:divide-white/5">
+            {paginated.length === 0 && (
+              <tr>
+                <td colSpan={7} className="px-5 py-10 text-center">
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-200">No plants found</p>
+                  <p className="mt-1 text-xs text-gray-500">Live plant inventory will populate this table automatically.</p>
+                </td>
+              </tr>
+            )}
             {paginated.map((plant) => {
               const health = HEALTH_STYLES[plant.healthStatus];
               const stage = STAGE_STYLES[plant.growthStage];
@@ -227,13 +216,15 @@ export function PlantTable({ plants = DEFAULT_PLANTS, pageSize = 8 }: PlantTable
       {/* Pagination */}
       <div className="flex items-center justify-between border-t border-gray-200/60 px-5 py-3 dark:border-white/5">
         <p className="text-xs text-gray-500 dark:text-gray-400">
-          Showing {page * pageSize + 1}-{Math.min((page + 1) * pageSize, sorted.length)} of{' '}
+          Showing {sorted.length === 0 ? 0 : page * pageSize + 1}-{Math.min((page + 1) * pageSize, sorted.length)} of{' '}
           {sorted.length} plants
         </p>
         <div className="flex items-center gap-1">
           <button
             onClick={() => setPage(Math.max(0, page - 1))}
             disabled={page === 0}
+            aria-label="Previous page"
+            title="Previous page"
             className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 disabled:opacity-40 dark:hover:bg-white/5"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -255,6 +246,8 @@ export function PlantTable({ plants = DEFAULT_PLANTS, pageSize = 8 }: PlantTable
           <button
             onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
             disabled={page >= totalPages - 1}
+            aria-label="Next page"
+            title="Next page"
             className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 disabled:opacity-40 dark:hover:bg-white/5"
           >
             <ChevronRight className="h-4 w-4" />

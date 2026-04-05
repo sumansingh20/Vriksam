@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
 import {
   Minus,
   Plus,
@@ -13,18 +14,31 @@ import {
   Truck,
   Shield,
   Package,
+  Loader2,
+  AlertTriangle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { plants, type Plant, formatPrice } from '../_data';
+import {
+  clearMarketplaceCart,
+  getMarketplaceCart,
+  removeMarketplaceCartItem,
+  setMarketplaceCart,
+  type MarketplaceCartEntry,
+  updateMarketplaceCartItem,
+} from '@/lib/marketplace-cart';
+import marketplaceService, {
+  formatMarketplaceCurrency,
+  type MarketplaceCatalogItem,
+} from '@/services/marketplace.service';
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-interface CartItem {
-  plant: Plant;
-  quantity: number;
+interface ResolvedCartItem {
+  entry: MarketplaceCartEntry;
+  item: MarketplaceCatalogItem;
 }
 
 // ---------------------------------------------------------------------------
@@ -62,20 +76,28 @@ function formatCurrencyFull(amount: number): string {
   }).format(amount);
 }
 
-// ---------------------------------------------------------------------------
-// Initial cart items (pre-populated for demo)
-// ---------------------------------------------------------------------------
+function getCardGradient(item: MarketplaceCatalogItem, index: number): string {
+  const firstCategory = (item.categories[0] || item.category || '').toLowerCase();
 
-function getInitialCart(): CartItem[] {
-  const arecaPalm = plants.find((p) => p.slug === 'areca-palm');
-  const moneyPlant = plants.find((p) => p.slug === 'money-plant-golden');
-  const snakePlant = plants.find((p) => p.slug === 'snake-plant');
+  if (firstCategory.includes('indoor')) return 'from-emerald-400 to-green-600';
+  if (firstCategory.includes('outdoor')) return 'from-sky-400 to-cyan-600';
+  if (firstCategory.includes('flower')) return 'from-fuchsia-400 to-rose-500';
+  if (firstCategory.includes('succulent')) return 'from-lime-400 to-emerald-500';
+  if (firstCategory.includes('palm')) return 'from-teal-400 to-green-700';
 
-  const items: CartItem[] = [];
-  if (arecaPalm) items.push({ plant: arecaPalm, quantity: 1 });
-  if (moneyPlant) items.push({ plant: moneyPlant, quantity: 2 });
-  if (snakePlant) items.push({ plant: snakePlant, quantity: 1 });
-  return items;
+  const fallback = [
+    'from-emerald-400 to-teal-500',
+    'from-amber-400 to-orange-500',
+    'from-cyan-400 to-sky-500',
+    'from-lime-400 to-emerald-500',
+    'from-violet-400 to-fuchsia-500',
+  ];
+
+  return fallback[index % fallback.length] ?? 'from-emerald-400 to-teal-500';
+}
+
+function getItemCost(item: MarketplaceCatalogItem): number | null {
+  return item.minUnitCost ?? item.averageUnitCost ?? null;
 }
 
 // ---------------------------------------------------------------------------
@@ -83,35 +105,103 @@ function getInitialCart(): CartItem[] {
 // ---------------------------------------------------------------------------
 
 export default function CartPage() {
-  const [cartItems, setCartItems] = useState<CartItem[]>(getInitialCart);
+  const [cartEntries, setCartEntries] = useState<MarketplaceCartEntry[]>([]);
+  const [hydrated, setHydrated] = useState(false);
+
+  const catalogQuery = useQuery({
+    queryKey: ['marketplace', 'cart-catalog'],
+    queryFn: () => marketplaceService.getCatalog({ limit: 300, sortBy: 'popular' }),
+    staleTime: 2 * 60 * 1000,
+  });
+
+  useEffect(() => {
+    setCartEntries(getMarketplaceCart());
+    setHydrated(true);
+  }, []);
+
+  const catalogItems = useMemo(
+    () => catalogQuery.data?.items ?? [],
+    [catalogQuery.data],
+  );
+
+  const itemById = useMemo(
+    () => new Map(catalogItems.map((item) => [item.id, item])),
+    [catalogItems],
+  );
+
+  const cartItems = useMemo<ResolvedCartItem[]>(
+    () =>
+      cartEntries
+        .map((entry) => ({
+          entry,
+          item: itemById.get(entry.itemId),
+        }))
+        .filter((row): row is ResolvedCartItem => Boolean(row.item)),
+    [cartEntries, itemById],
+  );
+
+  useEffect(() => {
+    if (!hydrated || catalogQuery.isLoading) return;
+
+    const validIds = new Set(catalogItems.map((item) => item.id));
+    const filtered = cartEntries.filter((entry) => validIds.has(entry.itemId));
+
+    if (filtered.length !== cartEntries.length) {
+      setMarketplaceCart(filtered);
+      setCartEntries(filtered);
+    }
+  }, [cartEntries, catalogItems, catalogQuery.isLoading, hydrated]);
 
   // Handlers
-  const updateQuantity = (plantId: number, newQty: number) => {
-    if (newQty <= 0) {
-      setCartItems((items) => items.filter((i) => i.plant.id !== plantId));
-    } else {
-      setCartItems((items) =>
-        items.map((i) =>
-          i.plant.id === plantId ? { ...i, quantity: newQty } : i
-        )
-      );
-    }
+  const updateQuantity = (itemId: string, newQty: number) => {
+    const updated = updateMarketplaceCartItem(itemId, newQty);
+    setCartEntries(updated);
   };
 
-  const removeItem = (plantId: number) => {
-    setCartItems((items) => items.filter((i) => i.plant.id !== plantId));
+  const removeItem = (itemId: string) => {
+    const updated = removeMarketplaceCartItem(itemId);
+    setCartEntries(updated);
   };
 
   // Price calculations
   const subtotal = useMemo(
-    () => cartItems.reduce((sum, item) => sum + item.plant.price * item.quantity, 0),
+    () =>
+      cartItems.reduce((sum, row) => {
+        const unitCost = getItemCost(row.item) ?? 0;
+        return sum + unitCost * row.entry.quantity;
+      }, 0),
     [cartItems]
   );
   const gstRate = 0.18;
   const gstAmount = subtotal * gstRate;
   const deliveryFee = subtotal >= 499 ? 0 : 49;
   const total = subtotal + gstAmount + deliveryFee;
-  const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  const totalItems = cartItems.reduce((sum, row) => sum + row.entry.quantity, 0);
+
+  if (!hydrated || catalogQuery.isLoading) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="flex items-center gap-2 text-sm text-gray-600">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Loading cart and live catalog...
+        </div>
+      </div>
+    );
+  }
+
+  if (catalogQuery.isError) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center px-4">
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-6 py-5 text-center text-sm text-amber-800">
+          <div className="mb-2 inline-flex items-center gap-1 font-semibold">
+            <AlertTriangle className="h-4 w-4" />
+            Unable to load live catalog
+          </div>
+          <p className="text-xs">Please refresh and try again.</p>
+        </div>
+      </div>
+    );
+  }
 
   // =========================================================================
   // EMPTY CART STATE
@@ -152,6 +242,17 @@ export default function CartPage() {
                 Browse Plants
               </Button>
             </Link>
+
+              <button
+                type="button"
+                onClick={() => {
+                  clearMarketplaceCart();
+                  setCartEntries([]);
+                }}
+                className="mt-3 text-xs text-gray-400 underline-offset-2 hover:underline"
+              >
+                Clear saved cart state
+              </button>
           </motion.div>
         </div>
       </div>
@@ -189,9 +290,15 @@ export default function CartPage() {
             animate="show"
           >
             <AnimatePresence mode="popLayout">
-              {cartItems.map((item) => (
+              {cartItems.map((row, index) => {
+                const item = row.item;
+                const quantity = row.entry.quantity;
+                const unitCost = getItemCost(item);
+                const lineCost = (unitCost ?? 0) * quantity;
+
+                return (
                 <motion.div
-                  key={item.plant.id}
+                  key={item.id}
                   layout
                   variants={staggerItem}
                   exit={{
@@ -207,13 +314,13 @@ export default function CartPage() {
                 >
                   {/* Image */}
                   <Link
-                    href={`/marketplace/${item.plant.slug}`}
+                    href={`/marketplace/${item.slug}`}
                     className="shrink-0"
                   >
                     <div
                       className={cn(
                         'flex h-20 w-20 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br sm:h-24 sm:w-24',
-                        item.plant.gradient
+                        getCardGradient(item, index)
                       )}
                     >
                       <Leaf className="h-8 w-8 text-white/25" />
@@ -223,29 +330,24 @@ export default function CartPage() {
                   {/* Info */}
                   <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:gap-6">
                     <div className="flex-1">
-                      <Link href={`/marketplace/${item.plant.slug}`}>
+                      <Link href={`/marketplace/${item.slug}`}>
                         <h3 className="text-sm font-semibold text-gray-900 transition-colors hover:text-emerald-600 sm:text-base">
-                          {item.plant.name}
+                          {item.name}
                         </h3>
                       </Link>
                       <p className="text-xs italic text-gray-400">
-                        {item.plant.scientificName}
+                        {item.scientificName}
                       </p>
                       <p className="mt-1 text-sm font-bold text-gray-900 sm:hidden">
-                        {formatPrice(item.plant.price)}
+                        {unitCost != null ? formatMarketplaceCurrency(unitCost) : 'Quote on request'}
                       </p>
                     </div>
 
                     {/* Price (desktop) */}
                     <div className="hidden w-24 text-right sm:block">
                       <p className="text-sm font-bold text-gray-900">
-                        {formatPrice(item.plant.price)}
+                        {unitCost != null ? formatMarketplaceCurrency(unitCost) : 'Quote'}
                       </p>
-                      {item.plant.originalPrice && (
-                        <p className="text-xs text-gray-400 line-through">
-                          {formatPrice(item.plant.originalPrice)}
-                        </p>
-                      )}
                     </div>
 
                     {/* Quantity adjuster */}
@@ -254,13 +356,13 @@ export default function CartPage() {
                         <button
                           onClick={() =>
                             updateQuantity(
-                              item.plant.id,
-                              item.quantity - 1
+                              item.id,
+                              quantity - 1
                             )
                           }
                           className={cn(
                             'flex h-8 w-8 items-center justify-center rounded-lg transition-colors',
-                            item.quantity <= 1
+                            quantity <= 1
                               ? 'text-gray-300'
                               : 'text-gray-600 hover:bg-white hover:shadow-sm'
                           )}
@@ -269,13 +371,13 @@ export default function CartPage() {
                           <Minus className="h-4 w-4" />
                         </button>
                         <span className="w-10 text-center text-sm font-semibold text-gray-900">
-                          {item.quantity}
+                          {quantity}
                         </span>
                         <button
                           onClick={() =>
                             updateQuantity(
-                              item.plant.id,
-                              item.quantity + 1
+                              item.id,
+                              quantity + 1
                             )
                           }
                           className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-600 transition-colors hover:bg-white hover:shadow-sm"
@@ -287,21 +389,22 @@ export default function CartPage() {
 
                       {/* Item total */}
                       <p className="hidden w-24 text-right text-sm font-bold text-gray-900 sm:block">
-                        {formatPrice(item.plant.price * item.quantity)}
+                        {unitCost != null ? formatMarketplaceCurrency(lineCost) : 'Quote'}
                       </p>
 
                       {/* Remove */}
                       <button
-                        onClick={() => removeItem(item.plant.id)}
+                        onClick={() => removeItem(item.id)}
                         className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-300 transition-colors hover:bg-red-50 hover:text-red-500"
-                        aria-label={`Remove ${item.plant.name}`}
+                        aria-label={`Remove ${item.name}`}
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
                   </div>
                 </motion.div>
-              ))}
+                );
+              })}
             </AnimatePresence>
 
             {/* Continue shopping link */}
@@ -342,19 +445,24 @@ export default function CartPage() {
               <div className="mt-6 space-y-4">
                 {/* Line items summary */}
                 <div className="space-y-2 border-b border-gray-100 pb-4">
-                  {cartItems.map((item) => (
-                    <div
-                      key={item.plant.id}
-                      className="flex justify-between text-sm"
-                    >
-                      <span className="text-gray-500">
-                        {item.plant.name} x{item.quantity}
-                      </span>
-                      <span className="font-medium text-gray-700">
-                        {formatPrice(item.plant.price * item.quantity)}
-                      </span>
-                    </div>
-                  ))}
+                  {cartItems.map((item) => {
+                    const unitCost = getItemCost(item.item);
+                    const lineCost = (unitCost ?? 0) * item.entry.quantity;
+
+                    return (
+                      <div
+                        key={item.item.id}
+                        className="flex justify-between text-sm"
+                      >
+                        <span className="text-gray-500">
+                          {item.item.name} x{item.entry.quantity}
+                        </span>
+                        <span className="font-medium text-gray-700">
+                          {unitCost != null ? formatMarketplaceCurrency(lineCost) : 'Quote'}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
 
                 {/* Subtotal */}
@@ -384,7 +492,7 @@ export default function CartPage() {
                         : 'text-gray-900'
                     )}
                   >
-                    {deliveryFee === 0 ? 'Free' : formatPrice(deliveryFee)}
+                    {deliveryFee === 0 ? 'Free' : formatMarketplaceCurrency(deliveryFee)}
                   </span>
                 </div>
 
@@ -425,7 +533,7 @@ export default function CartPage() {
                 <div className="flex items-center gap-3 text-xs text-gray-400">
                   <Truck className="h-4 w-4 shrink-0" />
                   <span>
-                    Free delivery on orders above {'\u20B9'}499
+                    Free delivery on orders above INR 499
                   </span>
                 </div>
                 <div className="flex items-center gap-3 text-xs text-gray-400">

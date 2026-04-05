@@ -98,7 +98,6 @@ const notificationSchema = new Schema<INotificationDocument, INotificationModel>
 // ---------------------------------------------------------------------------
 notificationSchema.index({ userId: 1 });
 notificationSchema.index({ isRead: 1 });
-notificationSchema.index({ createdAt: 1 });
 
 // TTL index: auto-delete notifications after 90 days
 notificationSchema.index({ createdAt: 1 }, { expireAfterSeconds: 90 * 24 * 60 * 60 });

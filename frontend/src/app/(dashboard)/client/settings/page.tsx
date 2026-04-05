@@ -1,68 +1,110 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import {
   User,
   Mail,
   Phone,
   Building2,
-  Bell,
-  Smartphone,
   Eye,
   EyeOff,
   Pencil,
   Check,
   X,
   Shield,
+  Loader2,
 } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/use-auth';
+import authService from '@/services/auth.service';
+import api from '@/services/api';
 
-/* -------------------------------------------------------------------------- */
-/*  Types                                                                      */
-/* -------------------------------------------------------------------------- */
-
-interface NotificationPref {
-  id: string;
-  label: string;
-  description: string;
-  email: boolean;
-  sms: boolean;
-  push: boolean;
+interface ApiEnvelope<T> {
+  success: boolean;
+  data: T;
 }
 
-/* -------------------------------------------------------------------------- */
-/*  Mock Data                                                                  */
-/* -------------------------------------------------------------------------- */
+interface InvoiceRow {
+  id: string;
+  status?: string;
+  totalAmount?: number;
+  amountPaid?: number;
+  issueDate?: string;
+  paidDate?: string | null;
+}
 
-const profileData = {
-  name: 'Rahul Mehta',
-  email: 'rahul.mehta@techcorp.com',
-  phone: '+91 98765 43210',
-  company: 'TechCorp Ltd',
+interface NotificationState {
+  email: boolean;
+  push: boolean;
+  sms: boolean;
+  maintenanceReminders: boolean;
+  paymentAlerts: boolean;
+  healthAlerts: boolean;
+}
+
+const defaultNotifications: NotificationState = {
+  email: true,
+  push: true,
+  sms: false,
+  maintenanceReminders: true,
+  paymentAlerts: true,
+  healthAlerts: true,
 };
 
-const initialNotifications: NotificationPref[] = [
-  { id: 'maintenance', label: 'Maintenance Alerts', description: 'Upcoming and completed maintenance visits', email: true, sms: true, push: true },
-  { id: 'health', label: 'Plant Health Updates', description: 'Alerts when plant health scores change', email: true, sms: false, push: true },
-  { id: 'billing', label: 'Billing & Invoices', description: 'Payment confirmations and invoice reminders', email: true, sms: false, push: false },
-  { id: 'reports', label: 'Report Ready', description: 'Notification when reports are generated', email: true, sms: false, push: true },
-  { id: 'newsletter', label: 'Tips & Newsletter', description: 'Plant care tips and product updates', email: false, sms: false, push: false },
+const notificationRows: Array<{
+  key: keyof NotificationState;
+  label: string;
+  description: string;
+}> = [
+  {
+    key: 'maintenanceReminders',
+    label: 'Maintenance alerts',
+    description: 'Upcoming and completed maintenance visits.',
+  },
+  {
+    key: 'healthAlerts',
+    label: 'Plant health updates',
+    description: 'Health score changes and critical warnings.',
+  },
+  {
+    key: 'paymentAlerts',
+    label: 'Billing and invoices',
+    description: 'Payment confirmations and invoice reminders.',
+  },
+  {
+    key: 'email',
+    label: 'Email channel',
+    description: 'Receive updates by email.',
+  },
+  {
+    key: 'push',
+    label: 'Push channel',
+    description: 'Allow in-app push notifications.',
+  },
+  {
+    key: 'sms',
+    label: 'SMS channel',
+    description: 'Send urgent alerts by SMS.',
+  },
 ];
 
-const connectedAccounts = [
-  { id: 'google', name: 'Google', description: 'Sign in with Google', connected: true, icon: '🔗' },
-  { id: 'slack', name: 'Slack', description: 'Receive notifications in Slack', connected: false, icon: '💬' },
-];
-
-/* -------------------------------------------------------------------------- */
-/*  Toggle Switch                                                              */
-/* -------------------------------------------------------------------------- */
-
-function ToggleSwitch({ enabled, onChange }: { enabled: boolean; onChange: (v: boolean) => void }) {
+function ToggleSwitch({
+  enabled,
+  onChange,
+  label,
+}: {
+  enabled: boolean;
+  onChange: (v: boolean) => void;
+  label: string;
+}) {
   return (
     <button
+      type="button"
+      aria-label={label}
+      title={label}
       onClick={() => onChange(!enabled)}
       className={cn(
         'relative h-6 w-11 rounded-full transition-colors duration-200',
@@ -78,10 +120,6 @@ function ToggleSwitch({ enabled, onChange }: { enabled: boolean; onChange: (v: b
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/*  Glass Card                                                                 */
-/* -------------------------------------------------------------------------- */
-
 function GlassCard({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
     <div className={cn('rounded-2xl border border-gray-200/60 bg-white/80 p-6 backdrop-blur-xl dark:border-white/5 dark:bg-gray-900/50', className)}>
@@ -90,21 +128,128 @@ function GlassCard({ children, className }: { children: React.ReactNode; classNa
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/*  Page                                                                       */
-/* -------------------------------------------------------------------------- */
+function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    minimumFractionDigits: 0,
+  }).format(amount);
+}
 
 export default function ClientSettingsPage() {
+  const { user, updateUser } = useAuth();
+
   const [isEditing, setIsEditing] = useState(false);
-  const [profile, setProfile] = useState(profileData);
-  const [editProfile, setEditProfile] = useState(profileData);
-  const [notifications, setNotifications] = useState(initialNotifications);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
 
-  const handleSaveProfile = () => {
-    setProfile(editProfile);
-    setIsEditing(false);
+  const [profile, setProfile] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    company: '',
+  });
+
+  const [editProfile, setEditProfile] = useState(profile);
+  const [notifications, setNotifications] = useState<NotificationState>(
+    defaultNotifications,
+  );
+
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+
+  useEffect(() => {
+    const currentUser = (user ?? {}) as Record<string, unknown>;
+    const userNotifications =
+      ((currentUser.preferences as { notifications?: Partial<NotificationState> } | undefined)
+        ?.notifications as Partial<NotificationState> | undefined) ?? {};
+
+    const nextProfile = {
+      name: String(currentUser.name ?? ''),
+      email: String(currentUser.email ?? ''),
+      phone: String(currentUser.phone ?? ''),
+      company: String((currentUser as { company?: string }).company ?? ''),
+    };
+
+    setProfile(nextProfile);
+    setEditProfile(nextProfile);
+    setNotifications({ ...defaultNotifications, ...userNotifications });
+  }, [user]);
+
+  const invoicesQuery = useQuery({
+    queryKey: ['client', 'settings', 'invoices'],
+    queryFn: async () => {
+      const response = await api.get<ApiEnvelope<InvoiceRow[]> & { pagination?: unknown }>(
+        '/invoices',
+        {
+          params: {
+            page: 1,
+            limit: 40,
+            sortBy: 'issueDate',
+            sortOrder: 'desc',
+          },
+        },
+      );
+
+      return response.data ?? [];
+    },
+    staleTime: 60 * 1000,
+  });
+
+  const billingSummary = useMemo(() => {
+    const invoices = invoicesQuery.data ?? [];
+    const paid = invoices.filter((invoice) =>
+      String(invoice.status ?? '').toUpperCase().includes('PAID'),
+    );
+    const pending = invoices.filter((invoice) =>
+      String(invoice.status ?? '').toUpperCase().includes('PENDING'),
+    );
+
+    return {
+      paidAmount: paid.reduce(
+        (sum, invoice) => sum + Number(invoice.amountPaid ?? invoice.totalAmount ?? 0),
+        0,
+      ),
+      paidCount: paid.length,
+      pendingCount: pending.length,
+    };
+  }, [invoicesQuery.data]);
+
+  const saveProfileMutation = useMutation({
+    mutationFn: async () => {
+      return authService.updateProfile({
+        name: editProfile.name.trim(),
+        phone: editProfile.phone.trim(),
+        preferences: { notifications },
+      } as never);
+    },
+    onSuccess: (updated) => {
+      const next = {
+        ...profile,
+        name: editProfile.name,
+        phone: editProfile.phone,
+      };
+      setProfile(next);
+      setEditProfile(next);
+      setIsEditing(false);
+      updateUser(updated as never);
+    },
+  });
+
+  const changePasswordMutation = useMutation({
+    mutationFn: async () => {
+      return authService.changePassword(passwordForm);
+    },
+    onSuccess: () => {
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    },
+  });
+
+  const toggleNotification = (id: keyof NotificationState, value: boolean) => {
+    setNotifications((prev) => ({ ...prev, [id]: value }));
   };
 
   const handleCancelEdit = () => {
@@ -112,30 +257,24 @@ export default function ClientSettingsPage() {
     setIsEditing(false);
   };
 
-  const toggleNotification = (id: string, channel: 'email' | 'sms' | 'push') => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, [channel]: !n[channel] } : n)),
-    );
-  };
-
   return (
     <div className="space-y-6">
       <PageHeader
         title="Settings"
-        description="Manage your account settings and preferences."
+        description="Manage your account settings and notification preferences with live account data."
         breadcrumbs={[
           { label: 'Client', href: '/client' },
           { label: 'Settings' },
         ]}
       />
 
-      {/* Profile Section */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
         <GlassCard>
           <div className="mb-6 flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Profile</h3>
             {!isEditing ? (
               <button
+                type="button"
                 onClick={() => setIsEditing(true)}
                 className="flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-white/10 dark:text-gray-300"
               >
@@ -145,6 +284,7 @@ export default function ClientSettingsPage() {
             ) : (
               <div className="flex items-center gap-2">
                 <button
+                  type="button"
                   onClick={handleCancelEdit}
                   className="flex items-center gap-1 rounded-xl border border-gray-200 px-3 py-2 text-sm font-medium text-gray-500 transition-colors hover:bg-gray-50 dark:border-white/10"
                 >
@@ -152,11 +292,13 @@ export default function ClientSettingsPage() {
                   Cancel
                 </button>
                 <button
-                  onClick={handleSaveProfile}
-                  className="flex items-center gap-1 rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-emerald-600"
+                  type="button"
+                  onClick={() => saveProfileMutation.mutate()}
+                  disabled={saveProfileMutation.isPending}
+                  className="flex items-center gap-1 rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   <Check className="h-3.5 w-3.5" />
-                  Save
+                  {saveProfileMutation.isPending ? 'Saving...' : 'Save'}
                 </button>
               </div>
             )}
@@ -170,29 +312,31 @@ export default function ClientSettingsPage() {
               { key: 'company' as const, label: 'Company', icon: Building2, type: 'text' },
             ].map((field) => {
               const Icon = field.icon;
-              const isCompany = field.key === 'company';
+              const readOnly = field.key === 'email' || field.key === 'company';
+              const inputId = `client-profile-${field.key}`;
+
               return (
                 <div key={field.key} className="flex items-center gap-4 rounded-xl bg-gray-50/80 p-4 dark:bg-white/[0.03]">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-100 dark:bg-white/5">
                     <Icon className="h-4 w-4 text-gray-500" />
                   </div>
                   <div className="flex-1">
-                    <label className="mb-0.5 block text-xs font-medium text-gray-400">
+                    <label htmlFor={inputId} className="mb-0.5 block text-xs font-medium text-gray-400">
                       {field.label}
                     </label>
-                    {isEditing && !isCompany ? (
+                    {isEditing && !readOnly ? (
                       <input
+                        id={inputId}
                         type={field.type}
                         value={editProfile[field.key]}
-                        onChange={(e) => setEditProfile((prev) => ({ ...prev, [field.key]: e.target.value }))}
+                        onChange={(event) =>
+                          setEditProfile((prev) => ({ ...prev, [field.key]: event.target.value }))
+                        }
                         className="w-full border-none bg-transparent p-0 text-sm font-medium text-gray-900 outline-none focus:ring-0 dark:text-white"
                       />
                     ) : (
                       <p className="text-sm font-medium text-gray-900 dark:text-white">
-                        {profile[field.key]}
-                        {isCompany && isEditing && (
-                          <span className="ml-2 text-xs text-gray-400">(read-only)</span>
-                        )}
+                        {profile[field.key] || (readOnly ? 'Not available' : '-')}
                       </p>
                     )}
                   </div>
@@ -200,39 +344,33 @@ export default function ClientSettingsPage() {
               );
             })}
           </div>
+
+          {saveProfileMutation.isError && (
+            <p className="mt-3 text-xs text-red-600">
+              {(saveProfileMutation.error as Error)?.message || 'Unable to save profile changes.'}
+            </p>
+          )}
         </GlassCard>
       </motion.div>
 
-      {/* Notification Preferences */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
         <GlassCard>
-          <h3 className="mb-6 text-lg font-semibold text-gray-900 dark:text-white">
-            Notification Preferences
-          </h3>
-
-          {/* Header */}
-          <div className="mb-3 flex items-center gap-4 px-4">
-            <div className="flex-1" />
-            <div className="flex items-center gap-6">
-              <div className="flex w-14 items-center justify-center gap-1">
-                <Mail className="h-3 w-3 text-gray-400" />
-                <span className="text-[10px] font-semibold text-gray-400">Email</span>
-              </div>
-              <div className="flex w-14 items-center justify-center gap-1">
-                <Smartphone className="h-3 w-3 text-gray-400" />
-                <span className="text-[10px] font-semibold text-gray-400">SMS</span>
-              </div>
-              <div className="flex w-14 items-center justify-center gap-1">
-                <Bell className="h-3 w-3 text-gray-400" />
-                <span className="text-[10px] font-semibold text-gray-400">Push</span>
-              </div>
-            </div>
+          <div className="mb-6 flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Notification Preferences</h3>
+            <button
+              type="button"
+              onClick={() => saveProfileMutation.mutate()}
+              disabled={saveProfileMutation.isPending}
+              className="rounded-xl border border-gray-200 px-3 py-2 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:text-gray-300"
+            >
+              {saveProfileMutation.isPending ? 'Saving...' : 'Save Preferences'}
+            </button>
           </div>
 
           <div className="space-y-2">
-            {notifications.map((notification) => (
+            {notificationRows.map((notification) => (
               <div
-                key={notification.id}
+                key={notification.key}
                 className="flex items-center gap-4 rounded-xl bg-gray-50/80 p-4 dark:bg-white/[0.03]"
               >
                 <div className="flex-1">
@@ -241,127 +379,173 @@ export default function ClientSettingsPage() {
                   </p>
                   <p className="text-xs text-gray-500">{notification.description}</p>
                 </div>
-                <div className="flex items-center gap-6">
-                  <div className="flex w-14 justify-center">
-                    <ToggleSwitch
-                      enabled={notification.email}
-                      onChange={() => toggleNotification(notification.id, 'email')}
-                    />
-                  </div>
-                  <div className="flex w-14 justify-center">
-                    <ToggleSwitch
-                      enabled={notification.sms}
-                      onChange={() => toggleNotification(notification.id, 'sms')}
-                    />
-                  </div>
-                  <div className="flex w-14 justify-center">
-                    <ToggleSwitch
-                      enabled={notification.push}
-                      onChange={() => toggleNotification(notification.id, 'push')}
-                    />
-                  </div>
-                </div>
+                <ToggleSwitch
+                  enabled={notifications[notification.key]}
+                  onChange={(value) => toggleNotification(notification.key, value)}
+                  label={`Toggle ${notification.label}`}
+                />
               </div>
             ))}
           </div>
         </GlassCard>
       </motion.div>
 
-      {/* Connected Accounts */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
         <GlassCard>
-          <h3 className="mb-6 text-lg font-semibold text-gray-900 dark:text-white">
-            Connected Accounts
-          </h3>
-          <div className="space-y-3">
-            {connectedAccounts.map((account) => (
-              <div key={account.id} className="flex items-center justify-between rounded-xl bg-gray-50/80 p-4 dark:bg-white/[0.03]">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100 text-lg dark:bg-white/5">
-                    {account.icon}
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">{account.name}</p>
-                    <p className="text-xs text-gray-500">{account.description}</p>
-                  </div>
+          <h3 className="mb-6 text-lg font-semibold text-gray-900 dark:text-white">Billing</h3>
+
+          {invoicesQuery.isLoading ? (
+            <div className="flex items-center gap-2 rounded-xl bg-gray-50/80 px-4 py-3 text-sm text-gray-600 dark:bg-white/[0.03] dark:text-gray-300">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading billing records...
+            </div>
+          ) : (
+            <>
+              <div className="mb-4 grid gap-4 sm:grid-cols-3">
+                <div className="rounded-xl bg-emerald-50/70 p-4 dark:bg-emerald-500/10">
+                  <p className="text-xs text-gray-500">Amount paid</p>
+                  <p className="mt-1 text-lg font-bold text-emerald-700 dark:text-emerald-400">
+                    {formatCurrency(billingSummary.paidAmount)}
+                  </p>
                 </div>
-                <button
-                  className={cn(
-                    'rounded-xl px-4 py-2 text-sm font-medium transition-colors',
-                    account.connected
-                      ? 'border border-red-200 text-red-600 hover:bg-red-50 dark:border-red-500/20 dark:text-red-400'
-                      : 'border border-emerald-200 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-500/20 dark:text-emerald-400',
-                  )}
-                >
-                  {account.connected ? 'Disconnect' : 'Connect'}
-                </button>
+                <div className="rounded-xl bg-sky-50/70 p-4 dark:bg-sky-500/10">
+                  <p className="text-xs text-gray-500">Paid invoices</p>
+                  <p className="mt-1 text-lg font-bold text-sky-700 dark:text-sky-400">
+                    {billingSummary.paidCount}
+                  </p>
+                </div>
+                <div className="rounded-xl bg-amber-50/70 p-4 dark:bg-amber-500/10">
+                  <p className="text-xs text-gray-500">Pending invoices</p>
+                  <p className="mt-1 text-lg font-bold text-amber-700 dark:text-amber-400">
+                    {billingSummary.pendingCount}
+                  </p>
+                </div>
               </div>
-            ))}
-          </div>
+
+              <div className="space-y-2">
+                {(invoicesQuery.data ?? []).slice(0, 8).map((invoice) => (
+                  <div key={invoice.id} className="flex items-center justify-between rounded-xl bg-gray-50/80 px-4 py-3 text-sm dark:bg-white/[0.03]">
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-white">Invoice {invoice.id}</p>
+                      <p className="text-xs text-gray-500">
+                        {invoice.issueDate
+                          ? new Date(invoice.issueDate).toLocaleDateString('en-IN', {
+                              day: '2-digit',
+                              month: 'short',
+                              year: 'numeric',
+                            })
+                          : 'Unknown date'}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold text-gray-900 dark:text-white">
+                        {formatCurrency(Number(invoice.totalAmount ?? 0))}
+                      </p>
+                      <p className="text-xs text-gray-500">{String(invoice.status ?? 'UNKNOWN')}</p>
+                    </div>
+                  </div>
+                ))}
+
+                {(invoicesQuery.data ?? []).length === 0 && (
+                  <p className="text-sm text-gray-500">No invoices available for this account.</p>
+                )}
+              </div>
+            </>
+          )}
         </GlassCard>
       </motion.div>
 
-      {/* Change Password */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
         <GlassCard>
           <div className="mb-6 flex items-center gap-3">
             <Shield className="h-5 w-5 text-gray-400" />
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Change Password
-            </h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Change Password</h3>
           </div>
+
           <div className="space-y-4">
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label htmlFor="client-current-password" className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Current Password
               </label>
               <div className="relative">
                 <input
+                  id="client-current-password"
                   type={showCurrentPassword ? 'text' : 'password'}
-                  placeholder="Enter current password"
+                  value={passwordForm.currentPassword}
+                  onChange={(event) =>
+                    setPasswordForm((prev) => ({ ...prev, currentPassword: event.target.value }))
+                  }
                   className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 pr-12 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-white/10 dark:bg-gray-800 dark:text-white"
                 />
                 <button
                   type="button"
-                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                  aria-label="Toggle current password visibility"
+                  title="Toggle current password visibility"
+                  onClick={() => setShowCurrentPassword((prev) => !prev)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 >
                   {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
             </div>
+
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label htmlFor="client-new-password" className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
                 New Password
               </label>
               <div className="relative">
                 <input
+                  id="client-new-password"
                   type={showNewPassword ? 'text' : 'password'}
-                  placeholder="Enter new password"
+                  value={passwordForm.newPassword}
+                  onChange={(event) =>
+                    setPasswordForm((prev) => ({ ...prev, newPassword: event.target.value }))
+                  }
                   className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 pr-12 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-white/10 dark:bg-gray-800 dark:text-white"
                 />
                 <button
                   type="button"
-                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  aria-label="Toggle new password visibility"
+                  title="Toggle new password visibility"
+                  onClick={() => setShowNewPassword((prev) => !prev)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 >
                   {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
             </div>
+
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label htmlFor="client-confirm-password" className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Confirm New Password
               </label>
               <input
+                id="client-confirm-password"
                 type="password"
-                placeholder="Confirm new password"
+                value={passwordForm.confirmPassword}
+                onChange={(event) =>
+                  setPasswordForm((prev) => ({ ...prev, confirmPassword: event.target.value }))
+                }
+                  title="Confirm new password"
                 className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-white/10 dark:bg-gray-800 dark:text-white"
               />
             </div>
-            <div className="flex justify-end pt-2">
-              <button className="rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 transition-shadow hover:shadow-emerald-500/40">
-                Update Password
+
+            <div className="flex items-center justify-between pt-2">
+              {changePasswordMutation.isError ? (
+                <p className="text-xs text-red-600">
+                  {(changePasswordMutation.error as Error)?.message || 'Unable to update password.'}
+                </p>
+              ) : (
+                <p className="text-xs text-gray-400">Password changes are applied immediately after validation.</p>
+              )}
+              <button
+                type="button"
+                onClick={() => changePasswordMutation.mutate()}
+                disabled={changePasswordMutation.isPending}
+                className="rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 transition-shadow hover:shadow-emerald-500/40 disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {changePasswordMutation.isPending ? 'Updating...' : 'Update Password'}
               </button>
             </div>
           </div>

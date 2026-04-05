@@ -1,20 +1,36 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
 import {
   Search,
-  Plus,
   Package,
   AlertTriangle,
   RefreshCw,
+  Loader2,
 } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
+import api from '@/services/api';
 import { cn } from '@/lib/utils';
 
-/* -------------------------------------------------------------------------- */
-/*  Types                                                                     */
-/* -------------------------------------------------------------------------- */
+interface ApiEnvelope<T> {
+  success: boolean;
+  data: T;
+}
+
+interface InventoryApiItem {
+  id: string;
+  quantity: number;
+  minStock: number;
+  cost?: number;
+  supplier?: string | null;
+  lastRestocked?: string | null;
+  species?: {
+    commonName?: string;
+    scientificName?: string;
+  };
+}
 
 interface InventoryItem {
   id: string;
@@ -27,38 +43,13 @@ interface InventoryItem {
   lastRestocked: string;
 }
 
-/* -------------------------------------------------------------------------- */
-/*  Mock data                                                                 */
-/* -------------------------------------------------------------------------- */
-
-const inventory: InventoryItem[] = [
-  { id: 'INV-001', species: 'Spathiphyllum', commonName: 'Peace Lily', quantity: 45, minStock: 20, costPerUnit: 350, supplier: 'Green Nurseries Pvt Ltd', lastRestocked: '2026-03-10' },
-  { id: 'INV-002', species: 'Dracaena trifasciata', commonName: 'Snake Plant', quantity: 62, minStock: 30, costPerUnit: 250, supplier: 'Flora India', lastRestocked: '2026-03-08' },
-  { id: 'INV-003', species: 'Ficus lyrata', commonName: 'Fiddle Leaf Fig', quantity: 12, minStock: 15, costPerUnit: 1200, supplier: 'Premium Greens', lastRestocked: '2026-02-28' },
-  { id: 'INV-004', species: 'Monstera deliciosa', commonName: 'Monstera', quantity: 38, minStock: 25, costPerUnit: 800, supplier: 'Green Nurseries Pvt Ltd', lastRestocked: '2026-03-05' },
-  { id: 'INV-005', species: 'Nephrolepis exaltata', commonName: 'Boston Fern', quantity: 8, minStock: 20, costPerUnit: 200, supplier: 'Flora India', lastRestocked: '2026-02-20' },
-  { id: 'INV-006', species: 'Ficus elastica', commonName: 'Rubber Plant', quantity: 55, minStock: 20, costPerUnit: 450, supplier: 'Premium Greens', lastRestocked: '2026-03-12' },
-  { id: 'INV-007', species: 'Zamioculcas zamiifolia', commonName: 'ZZ Plant', quantity: 30, minStock: 15, costPerUnit: 550, supplier: 'Green Nurseries Pvt Ltd', lastRestocked: '2026-03-07' },
-  { id: 'INV-008', species: 'Epipremnum aureum', commonName: 'Pothos', quantity: 85, minStock: 40, costPerUnit: 150, supplier: 'Flora India', lastRestocked: '2026-03-14' },
-  { id: 'INV-009', species: 'Dypsis lutescens', commonName: 'Areca Palm', quantity: 18, minStock: 10, costPerUnit: 1500, supplier: 'Premium Greens', lastRestocked: '2026-03-01' },
-  { id: 'INV-010', species: 'Chlorophytum comosum', commonName: 'Spider Plant', quantity: 70, minStock: 30, costPerUnit: 180, supplier: 'Flora India', lastRestocked: '2026-03-11' },
-];
-
-/* -------------------------------------------------------------------------- */
-/*  Stock Level Bar                                                           */
-/* -------------------------------------------------------------------------- */
-
 function StockLevelBar({ quantity, minStock }: { quantity: number; minStock: number }) {
-  const maxDisplay = minStock * 3;
+  const maxDisplay = Math.max(minStock * 3, 1);
   const percentage = Math.min((quantity / maxDisplay) * 100, 100);
   const isLow = quantity < minStock;
   const isCritical = quantity < minStock * 0.5;
 
-  const color = isCritical
-    ? 'bg-red-500'
-    : isLow
-      ? 'bg-amber-500'
-      : 'bg-emerald-500';
+  const color = isCritical ? 'bg-red-500' : isLow ? 'bg-amber-500' : 'bg-emerald-500';
 
   return (
     <div className="flex items-center gap-2">
@@ -70,10 +61,16 @@ function StockLevelBar({ quantity, minStock }: { quantity: number; minStock: num
           className={cn('h-full rounded-full', color)}
         />
       </div>
-      <span className={cn(
-        'text-xs font-medium',
-        isCritical ? 'text-red-600 dark:text-red-400' : isLow ? 'text-amber-600 dark:text-amber-400' : 'text-gray-600 dark:text-gray-400'
-      )}>
+      <span
+        className={cn(
+          'text-xs font-medium',
+          isCritical
+            ? 'text-red-600 dark:text-red-400'
+            : isLow
+              ? 'text-amber-600 dark:text-amber-400'
+              : 'text-gray-600 dark:text-gray-400',
+        )}
+      >
         {quantity}/{minStock}
       </span>
       {isLow && <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />}
@@ -81,43 +78,95 @@ function StockLevelBar({ quantity, minStock }: { quantity: number; minStock: num
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/*  Page                                                                      */
-/* -------------------------------------------------------------------------- */
-
 export default function AdminInventoryPage() {
   const [search, setSearch] = useState('');
 
-  const filtered = inventory.filter(
-    (item) =>
-      item.commonName.toLowerCase().includes(search.toLowerCase()) ||
-      item.species.toLowerCase().includes(search.toLowerCase()) ||
-      item.supplier.toLowerCase().includes(search.toLowerCase())
+  const inventoryQuery = useQuery({
+    queryKey: ['admin', 'inventory', 'list'],
+    queryFn: async () => {
+      const response = await api.get<ApiEnvelope<InventoryApiItem[]> & { pagination?: unknown }>(
+        '/inventory',
+        {
+          params: {
+            page: 1,
+            limit: 400,
+            sortBy: 'updatedAt',
+            sortOrder: 'desc',
+          },
+        },
+      );
+
+      return response.data ?? [];
+    },
+    staleTime: 60 * 1000,
+  });
+
+  const inventory = useMemo<InventoryItem[]>(
+    () =>
+      (inventoryQuery.data ?? []).map((item) => ({
+        id: item.id,
+        species: item.species?.scientificName || 'Unknown species',
+        commonName: item.species?.commonName || 'Unnamed plant',
+        quantity: item.quantity,
+        minStock: item.minStock,
+        costPerUnit: typeof item.cost === 'number' ? item.cost : 0,
+        supplier: item.supplier || 'Supplier not specified',
+        lastRestocked: item.lastRestocked || '',
+      })),
+    [inventoryQuery.data],
+  );
+
+  const filtered = useMemo(
+    () =>
+      inventory.filter(
+        (item) =>
+          item.commonName.toLowerCase().includes(search.toLowerCase()) ||
+          item.species.toLowerCase().includes(search.toLowerCase()) ||
+          item.supplier.toLowerCase().includes(search.toLowerCase()),
+      ),
+    [inventory, search],
   );
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Inventory"
-        description="Track plant species stock levels, costs, and suppliers."
+        description="Track live stock levels, suppliers, and restock needs."
         breadcrumbs={[
           { label: 'Admin', href: '/admin' },
           { label: 'Inventory' },
         ]}
         actions={
-          <button className="btn-emerald flex items-center gap-2 rounded-xl">
-            <Plus className="h-4 w-4" />
-            Add Species
+          <button
+            type="button"
+            onClick={() => inventoryQuery.refetch()}
+            className="btn-emerald flex items-center gap-2 rounded-xl"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Refresh Inventory
           </button>
         }
       />
+
+      {inventoryQuery.isLoading && (
+        <div className="flex items-center gap-2 rounded-2xl border border-gray-200/70 bg-white/80 px-4 py-3 text-sm text-gray-600 dark:border-white/10 dark:bg-gray-900/40 dark:text-gray-300">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Loading live inventory...
+        </div>
+      )}
+
+      {inventoryQuery.isError && (
+        <div className="flex items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-200">
+          <AlertTriangle className="h-4 w-4" />
+          Unable to load inventory right now.
+        </div>
+      )}
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="rounded-2xl border border-gray-200/60 bg-white/80 backdrop-blur-xl dark:border-white/5 dark:bg-gray-900/50"
       >
-        {/* Search */}
         <div className="border-b border-gray-200/60 px-5 py-4 dark:border-white/5">
           <div className="relative max-w-sm">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
@@ -125,13 +174,12 @@ export default function AdminInventoryPage() {
               type="text"
               placeholder="Search inventory..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(event) => setSearch(event.target.value)}
               className="w-full rounded-xl border border-gray-200/80 bg-gray-50/50 py-2 pl-10 pr-4 text-sm text-gray-700 placeholder:text-gray-400 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
             />
           </div>
         </div>
 
-        {/* Table */}
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -146,6 +194,15 @@ export default function AdminInventoryPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100/80 dark:divide-white/5">
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="px-5 py-10 text-center">
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-200">No inventory records found</p>
+                    <p className="mt-1 text-xs text-gray-500">Inventory data will appear from live stock records.</p>
+                  </td>
+                </tr>
+              )}
+
               {filtered.map((item) => (
                 <tr
                   key={item.id}
@@ -169,13 +226,18 @@ export default function AdminInventoryPage() {
                     <StockLevelBar quantity={item.quantity} minStock={item.minStock} />
                   </td>
                   <td className="whitespace-nowrap px-5 py-3 text-gray-600 dark:text-gray-400">
-                    ₹{item.costPerUnit.toLocaleString('en-IN')}
+                    ?{item.costPerUnit.toLocaleString('en-IN')}
                   </td>
                   <td className="whitespace-nowrap px-5 py-3 text-gray-600 dark:text-gray-400">
                     {item.supplier}
                   </td>
                   <td className="whitespace-nowrap px-5 py-3 text-gray-600 dark:text-gray-400">
-                    {new Date(item.lastRestocked).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                    {item.lastRestocked
+                      ? new Date(item.lastRestocked).toLocaleDateString('en-IN', {
+                          day: 'numeric',
+                          month: 'short',
+                        })
+                      : '-'}
                   </td>
                   <td className="whitespace-nowrap px-5 py-3 text-right">
                     <button
@@ -183,8 +245,9 @@ export default function AdminInventoryPage() {
                         'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors',
                         item.quantity < item.minStock
                           ? 'bg-emerald-500 text-white hover:bg-emerald-600'
-                          : 'border border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-white/10 dark:text-gray-400 dark:hover:bg-white/5'
+                          : 'border border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-white/10 dark:text-gray-400 dark:hover:bg-white/5',
                       )}
+                      disabled
                     >
                       <RefreshCw className="h-3 w-3" />
                       Restock
