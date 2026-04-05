@@ -63,8 +63,71 @@ export const resetPasswordSchema = z.object({
     ),
 });
 
+const notificationPreferencesSchema = z
+  .object({
+    email: z.boolean().optional(),
+    push: z.boolean().optional(),
+    sms: z.boolean().optional(),
+    maintenanceReminders: z.boolean().optional(),
+    paymentAlerts: z.boolean().optional(),
+    healthAlerts: z.boolean().optional(),
+  })
+  .partial();
+
+export const updateProfileSchema = z
+  .object({
+    name: z
+      .string()
+      .trim()
+      .min(2, 'Name must be at least 2 characters')
+      .max(100, 'Name must be at most 100 characters')
+      .optional(),
+    phone: z
+      .string()
+      .trim()
+      .refine(
+        (value) => value.length === 0 || /^\+?[\d\s-]{10,15}$/.test(value),
+        'Invalid phone number format'
+      )
+      .optional(),
+    avatar: z.string().trim().url('Avatar must be a valid URL').optional(),
+    preferences: z
+      .object({
+        notifications: notificationPreferencesSchema.optional(),
+      })
+      .partial()
+      .optional(),
+  })
+  .refine((value) => Object.keys(value).length > 0, {
+    message: 'At least one profile field is required',
+  });
+
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z
+      .string({ required_error: 'Current password is required' })
+      .min(1, 'Current password is required'),
+    newPassword: z
+      .string({ required_error: 'New password is required' })
+      .min(8, 'Password must be at least 8 characters')
+      .max(128, 'Password must be at most 128 characters')
+      .regex(
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]+$/,
+        'Password must contain at least one uppercase, one lowercase, one number, and one special character'
+      ),
+    confirmPassword: z
+      .string({ required_error: 'Confirm password is required' })
+      .min(1, 'Confirm password is required'),
+  })
+  .refine((value) => value.newPassword === value.confirmPassword, {
+    path: ['confirmPassword'],
+    message: 'New password and confirm password must match',
+  });
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RefreshTokenInput = z.infer<typeof refreshTokenSchema>;
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;

@@ -137,10 +137,10 @@ function StatCard({
     >
       {/* Glow effect on hover */}
       <div className={cn(
-        'absolute -inset-2 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500',
+        'absolute -inset-2 rounded-3xl opacity-[0.15] group-hover:opacity-100 transition-opacity duration-500',
         'bg-gradient-to-r blur-xl',
         stat.gradient,
-      )} style={{ opacity: 0.15 }} />
+      )} />
 
       <motion.div
         whileHover={{ y: -6, scale: 1.02 }}
@@ -156,13 +156,7 @@ function StatCard({
       >
         {/* Animated background pattern */}
         <div className="absolute inset-0 rounded-3xl overflow-hidden">
-          <div
-            className="absolute inset-0 opacity-[0.03]"
-            style={{
-              backgroundImage: `radial-gradient(circle at 2px 2px, currentColor 1px, transparent 0)`,
-              backgroundSize: '24px 24px',
-            }}
-          />
+          <div className="absolute inset-0 opacity-[0.03] [background-image:radial-gradient(circle_at_2px_2px,currentColor_1px,transparent_0)] [background-size:24px_24px]" />
         </div>
 
         {/* Icon with gradient background */}
@@ -185,11 +179,10 @@ function StatCard({
             animate={{ scale: [1, 1.3, 1], opacity: [0.5, 0, 0.5] }}
             transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
             className={cn(
-              'absolute inset-0 rounded-2xl',
+              'absolute inset-0 rounded-2xl opacity-[0.2]',
               'bg-gradient-to-br',
               stat.gradient,
             )}
-            style={{ opacity: 0.2 }}
           />
         </motion.div>
 
@@ -292,7 +285,7 @@ export function StatsSection() {
           </h2>
 
           <p className="mt-6 text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto">
-            From startups to enterprises, we're helping organizations create healthier, greener workspaces across India.
+            From startups to enterprises, we&apos;re helping organizations create healthier, greener workspaces across India.
           </p>
         </motion.div>
 

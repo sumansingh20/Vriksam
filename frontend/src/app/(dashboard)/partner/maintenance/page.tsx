@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
 import {
-  Plus,
+  RefreshCw,
   ChevronLeft,
   ChevronRight,
   Clock,
@@ -17,96 +18,116 @@ import {
   AlertTriangle,
   Timer,
   CalendarClock,
+  Loader2,
 } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
+import api from '@/services/api';
 import { cn } from '@/lib/utils';
 
-/* -------------------------------------------------------------------------- */
-/*  Types                                                                      */
-/* -------------------------------------------------------------------------- */
+interface ApiEnvelope<T> {
+  success: boolean;
+  data: T;
+}
 
-interface ServiceVisit {
+interface VisitRow {
   id: string;
+  status: string;
+  scheduledDate: string;
+  notes?: string | null;
+  technicianId: string;
+  technician?: {
+    user?: {
+      name?: string;
+    };
+  };
+  plant?: {
+    nickname?: string;
+    species?: {
+      commonName?: string;
+    };
+    location?: {
+      name?: string;
+      client?: {
+        companyName?: string;
+      };
+    };
+  };
+}
+
+interface VisitCardData {
+  id: string;
+  dateKey: string;
   time: string;
-  duration: string;
   client: string;
   location: string;
   technician: string;
   plants: string[];
   notes: string;
-  status: 'scheduled' | 'completed' | 'in_progress' | 'overdue';
-  day: number; // 0=Mon ... 6=Sun
+  status: 'scheduled' | 'completed' | 'in_progress' | 'overdue' | 'cancelled';
 }
 
-/* -------------------------------------------------------------------------- */
-/*  Mock Data                                                                  */
-/* -------------------------------------------------------------------------- */
+const STATUS_OPTIONS = ['All', 'Scheduled', 'Completed', 'In Progress', 'Overdue', 'Cancelled'];
 
-const maintenanceStats = [
-  { label: 'Scheduled This Week', value: 28, icon: CalendarClock, color: 'text-blue-600', bg: 'bg-blue-500/10' },
-  { label: 'Completed', value: 16, icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-500/10' },
-  { label: 'Pending', value: 9, icon: Timer, color: 'text-amber-600', bg: 'bg-amber-500/10' },
-  { label: 'Overdue', value: 3, icon: AlertTriangle, color: 'text-red-600', bg: 'bg-red-500/10' },
-];
+function startOfWeek(input: Date) {
+  const date = new Date(input);
+  const day = date.getDay();
+  const delta = day === 0 ? -6 : 1 - day;
+  date.setDate(date.getDate() + delta);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
 
-const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const weekDates = ['Mar 10', 'Mar 11', 'Mar 12', 'Mar 13', 'Mar 14', 'Mar 15', 'Mar 16'];
+function addDays(date: Date, count: number) {
+  const copy = new Date(date);
+  copy.setDate(copy.getDate() + count);
+  return copy;
+}
 
-const technicians = ['All', 'Raj Patel', 'Priya Sharma', 'Deepak Nair', 'Sneha Reddy', 'Amit Kumar', 'Anita Desai'];
-const statusOptions = ['All', 'Scheduled', 'Completed', 'In Progress', 'Overdue'];
+function dateKey(date: Date) {
+  return date.toISOString().split('T')[0] || '';
+}
 
-const weekVisits: ServiceVisit[] = [
-  { id: '1', time: '09:00', duration: '1h', client: 'TechCorp Ltd', location: 'Mumbai HQ, Floor 3', technician: 'Raj Patel', plants: ['Monstera', 'Peace Lily', 'Snake Plant'], notes: 'Regular weekly maintenance. Check humidity levels.', status: 'completed', day: 0 },
-  { id: '2', time: '11:00', duration: '1.5h', client: 'GreenSpace Inc', location: 'Bangalore Campus A', technician: 'Priya Sharma', plants: ['Fiddle Leaf Fig', 'Pothos', 'ZZ Plant', 'Areca Palm'], notes: 'Deep watering needed. Inspect new installations.', status: 'completed', day: 0 },
-  { id: '3', time: '09:30', duration: '2h', client: 'Wellness Hub', location: 'Hyderabad Tower', technician: 'Deepak Nair', plants: ['Calathea', 'Boston Fern', 'Rubber Plant'], notes: 'Pest control follow-up. Fertilizer application due.', status: 'completed', day: 1 },
-  { id: '4', time: '14:00', duration: '1h', client: 'EcoVentures', location: 'Pune Office Park', technician: 'Sneha Reddy', plants: ['Bird of Paradise', 'Spider Plant'], notes: 'Monthly deep clean. Replace damaged pots.', status: 'completed', day: 1 },
-  { id: '5', time: '10:00', duration: '1.5h', client: 'Palm Residences', location: 'Delhi Green Villas', technician: 'Amit Kumar', plants: ['Areca Palm', 'Money Plant', 'Jade Plant'], notes: 'New plant installation - 5 units.', status: 'completed', day: 2 },
-  { id: '6', time: '13:00', duration: '1h', client: 'TechCorp Ltd', location: 'Mumbai HQ, Floor 5', technician: 'Raj Patel', plants: ['Dracaena', 'Philodendron'], notes: 'Health check after AC maintenance.', status: 'completed', day: 2 },
-  { id: '7', time: '09:00', duration: '2h', client: 'Skyline Towers', location: 'Lobby & Atrium', technician: 'Priya Sharma', plants: ['Majesty Palm', 'Schefflera', 'Dieffenbachia'], notes: 'Quarterly deep maintenance session.', status: 'completed', day: 3 },
-  { id: '8', time: '15:00', duration: '1h', client: 'Lotus Gardens', location: 'Community Hall', technician: 'Anita Desai', plants: ['Croton', 'Chinese Evergreen'], notes: 'Pruning and repotting scheduled.', status: 'completed', day: 3 },
-  { id: '9', time: '10:00', duration: '1.5h', client: 'Metro Plaza', location: 'Reception Area', technician: 'Deepak Nair', plants: ['Fiddle Leaf Fig', 'Monstera', 'Snake Plant'], notes: 'Emergency visit - plant health issue.', status: 'overdue', day: 4 },
-  { id: '10', time: '11:30', duration: '1h', client: 'GreenSpace Inc', location: 'Bangalore Campus B', technician: 'Sneha Reddy', plants: ['Peace Lily', 'Pothos'], notes: 'Standard weekly maintenance.', status: 'in_progress', day: 4 },
-  { id: '11', time: '14:00', duration: '2h', client: 'EcoVentures', location: 'Pune Office Park', technician: 'Raj Patel', plants: ['Areca Palm', 'Rubber Plant', 'ZZ Plant'], notes: 'Plant replacement and new installations.', status: 'scheduled', day: 4 },
-  { id: '12', time: '09:00', duration: '1h', client: 'Wellness Hub', location: 'Hyderabad Tower', technician: 'Priya Sharma', plants: ['Calathea', 'Boston Fern'], notes: 'Follow-up pest treatment.', status: 'scheduled', day: 5 },
-  { id: '13', time: '10:30', duration: '1.5h', client: 'TechCorp Ltd', location: 'Mumbai HQ, Lobby', technician: 'Amit Kumar', plants: ['Majesty Palm', 'Bird of Paradise'], notes: 'Seasonal plant rotation.', status: 'scheduled', day: 5 },
-  { id: '14', time: '13:00', duration: '1h', client: 'Palm Residences', location: 'Delhi Green Villas', technician: 'Anita Desai', plants: ['Money Plant', 'Jade Plant', 'Aloe Vera'], notes: 'Monthly health assessment.', status: 'scheduled', day: 5 },
-  { id: '15', time: '09:30', duration: '2h', client: 'Skyline Towers', location: 'Rooftop Garden', technician: 'Deepak Nair', plants: ['Bougainvillea', 'Jasmine', 'Hibiscus'], notes: 'Outdoor plant maintenance.', status: 'scheduled', day: 6 },
-  { id: '16', time: '14:00', duration: '1h', client: 'Lotus Gardens', location: 'Entrance Walkway', technician: 'Sneha Reddy', plants: ['Croton', 'Dieffenbachia'], notes: 'New installation walkthrough.', status: 'overdue', day: 4 },
-];
+function mapStatus(value: string): VisitCardData['status'] {
+  if (value === 'COMPLETED') return 'completed';
+  if (value === 'IN_PROGRESS') return 'in_progress';
+  if (value === 'MISSED') return 'overdue';
+  if (value === 'CANCELLED') return 'cancelled';
+  return 'scheduled';
+}
 
-/* -------------------------------------------------------------------------- */
-/*  Helper Components                                                          */
-/* -------------------------------------------------------------------------- */
-
-function StatusDot({ status }: { status: string }) {
-  const colors: Record<string, string> = {
+function StatusDot({ status }: { status: VisitCardData['status'] }) {
+  const colors: Record<VisitCardData['status'], string> = {
     scheduled: 'bg-blue-500',
     completed: 'bg-emerald-500',
     in_progress: 'bg-amber-500',
     overdue: 'bg-red-500',
+    cancelled: 'bg-gray-500',
   };
-  return <span className={cn('inline-block h-2 w-2 rounded-full', colors[status] ?? colors.scheduled)} />;
+
+  return <span className={cn('inline-block h-2 w-2 rounded-full', colors[status])} />;
 }
 
 function VisitCard({
   visit,
   onClick,
 }: {
-  visit: ServiceVisit;
+  visit: VisitCardData;
   onClick: () => void;
 }) {
-  const borderColors: Record<string, string> = {
+  const borderColors: Record<VisitCardData['status'], string> = {
     scheduled: 'border-l-blue-500',
     completed: 'border-l-emerald-500',
     in_progress: 'border-l-amber-500',
     overdue: 'border-l-red-500',
+    cancelled: 'border-l-gray-500',
   };
 
-  const bgColors: Record<string, string> = {
+  const bgColors: Record<VisitCardData['status'], string> = {
     scheduled: 'bg-blue-50/50 dark:bg-blue-500/5',
     completed: 'bg-emerald-50/50 dark:bg-emerald-500/5',
     in_progress: 'bg-amber-50/50 dark:bg-amber-500/5',
     overdue: 'bg-red-50/50 dark:bg-red-500/5',
+    cancelled: 'bg-gray-50/70 dark:bg-white/[0.04]',
   };
 
   return (
@@ -122,7 +143,7 @@ function VisitCard({
     >
       <div className="flex items-center gap-1 text-[11px] font-semibold text-gray-600 dark:text-gray-400">
         <Clock className="h-3 w-3" />
-        {visit.time} ({visit.duration})
+        {visit.time}
       </div>
       <p className="mt-0.5 truncate text-xs font-medium text-gray-900 dark:text-white">{visit.client}</p>
       <p className="truncate text-[10px] text-gray-500">{visit.technician}</p>
@@ -130,46 +151,180 @@ function VisitCard({
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/*  Page                                                                       */
-/* -------------------------------------------------------------------------- */
-
 export default function PartnerMaintenancePage() {
-  const [selectedVisit, setSelectedVisit] = useState<ServiceVisit | null>(null);
+  const [selectedVisit, setSelectedVisit] = useState<VisitCardData | null>(null);
   const [techFilter, setTechFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
+  const [weekOffset, setWeekOffset] = useState(0);
 
-  const filteredVisits = weekVisits.filter((visit) => {
-    const matchesTech = techFilter === 'All' || visit.technician === techFilter;
-    const matchesStatus =
-      statusFilter === 'All' ||
-      visit.status === statusFilter.toLowerCase().replace(' ', '_');
-    return matchesTech && matchesStatus;
+  const visitsQuery = useQuery({
+    queryKey: ['partner', 'maintenance', 'calendar', weekOffset],
+    queryFn: async () => {
+      const weekStart = addDays(startOfWeek(new Date()), weekOffset * 7);
+      const weekEnd = addDays(weekStart, 7);
+
+      const response = await api.get<ApiEnvelope<VisitRow[]> & { pagination?: unknown }>(
+        '/service-visits',
+        {
+          params: {
+            page: 1,
+            limit: 400,
+            sortBy: 'scheduledDate',
+            sortOrder: 'asc',
+            from: weekStart.toISOString(),
+            to: weekEnd.toISOString(),
+          },
+        },
+      );
+
+      return response.data ?? [];
+    },
+    staleTime: 60 * 1000,
   });
 
-  const getVisitsForDay = (day: number) =>
-    filteredVisits.filter((v) => v.day === day).sort((a, b) => a.time.localeCompare(b.time));
+  const weekStart = useMemo(
+    () => addDays(startOfWeek(new Date()), weekOffset * 7),
+    [weekOffset],
+  );
+
+  const days = useMemo(
+    () =>
+      Array.from({ length: 7 }, (_, index) => {
+        const date = addDays(weekStart, index);
+        return {
+          key: dateKey(date),
+          dayLabel: date.toLocaleDateString('en-IN', { weekday: 'short' }),
+          dateLabel: date.toLocaleDateString('en-IN', {
+            day: '2-digit',
+            month: 'short',
+          }),
+        };
+      }),
+    [weekStart],
+  );
+
+  const allVisits = useMemo<VisitCardData[]>(
+    () =>
+      (visitsQuery.data ?? []).map((visit) => {
+        const date = new Date(visit.scheduledDate);
+        return {
+          id: visit.id,
+          dateKey: dateKey(date),
+          time: date.toLocaleTimeString('en-IN', {
+            hour: '2-digit',
+            minute: '2-digit',
+          }),
+          client: visit.plant?.location?.client?.companyName ?? 'Client account',
+          location: visit.plant?.location?.name ?? 'Site location',
+          technician: visit.technician?.user?.name ?? 'Unassigned',
+          plants: [
+            visit.plant?.nickname,
+            visit.plant?.species?.commonName,
+          ].filter(Boolean) as string[],
+          notes: visit.notes || 'No notes provided for this visit.',
+          status: mapStatus(visit.status),
+        };
+      }),
+    [visitsQuery.data],
+  );
+
+  const technicians = useMemo(() => {
+    const names = new Set<string>();
+    allVisits.forEach((visit) => names.add(visit.technician));
+
+    return ['All', ...Array.from(names).sort((a, b) => a.localeCompare(b))];
+  }, [allVisits]);
+
+  const filteredVisits = useMemo(
+    () =>
+      allVisits.filter((visit) => {
+        const matchesTech = techFilter === 'All' || visit.technician === techFilter;
+        const matchesStatus =
+          statusFilter === 'All' ||
+          visit.status === statusFilter.toLowerCase().replace(' ', '_');
+
+        return matchesTech && matchesStatus;
+      }),
+    [allVisits, techFilter, statusFilter],
+  );
+
+  const stats = useMemo(() => {
+    const scheduled = filteredVisits.filter((visit) => visit.status === 'scheduled').length;
+    const completed = filteredVisits.filter((visit) => visit.status === 'completed').length;
+    const pending = filteredVisits.filter((visit) => visit.status === 'in_progress').length;
+    const overdue = filteredVisits.filter((visit) => visit.status === 'overdue').length;
+
+    return [
+      {
+        label: 'Scheduled This Week',
+        value: scheduled,
+        icon: CalendarClock,
+        color: 'text-blue-600',
+        bg: 'bg-blue-500/10',
+      },
+      {
+        label: 'Completed',
+        value: completed,
+        icon: CheckCircle2,
+        color: 'text-emerald-600',
+        bg: 'bg-emerald-500/10',
+      },
+      {
+        label: 'Pending',
+        value: pending,
+        icon: Timer,
+        color: 'text-amber-600',
+        bg: 'bg-amber-500/10',
+      },
+      {
+        label: 'Overdue',
+        value: overdue,
+        icon: AlertTriangle,
+        color: 'text-red-600',
+        bg: 'bg-red-500/10',
+      },
+    ];
+  }, [filteredVisits]);
+
+  const getVisitsForDay = (dayKey: string) =>
+    filteredVisits.filter((visit) => visit.dateKey === dayKey);
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Maintenance Schedule"
-        description="Plan, track, and manage service visits for all your clients."
+        description="Live weekly service calendar with technician assignment and visit status."
         breadcrumbs={[
-          { label: 'Partner', href: '/dashboard/partner' },
+          { label: 'Partner', href: '/partner' },
           { label: 'Maintenance' },
         ]}
         actions={
-          <button className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 transition-shadow hover:shadow-emerald-500/40">
-            <Plus className="h-4 w-4" />
-            Schedule Visit
+          <button
+            type="button"
+            onClick={() => visitsQuery.refetch()}
+            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 transition-shadow hover:shadow-emerald-500/40"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Refresh Schedule
           </button>
         }
       />
 
-      {/* Stats */}
+      {visitsQuery.isError && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-200">
+          Unable to load live maintenance schedule. Please retry shortly.
+        </div>
+      )}
+
+      {visitsQuery.isLoading && (
+        <div className="flex items-center gap-2 rounded-2xl border border-gray-200/70 bg-white/80 px-4 py-3 text-sm text-gray-600 dark:border-white/10 dark:bg-gray-900/40 dark:text-gray-300">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Loading live maintenance schedule...
+        </div>
+      )}
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {maintenanceStats.map((stat, index) => {
+        {stats.map((stat, index) => {
           const Icon = stat.icon;
           return (
             <motion.div
@@ -189,12 +344,12 @@ export default function PartnerMaintenancePage() {
         })}
       </div>
 
-      {/* Filters */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <Filter className="h-4 w-4 text-gray-400" />
         <select
           value={techFilter}
-          onChange={(e) => setTechFilter(e.target.value)}
+          onChange={(event) => setTechFilter(event.target.value)}
+          aria-label="Filter schedule by technician"
           className="rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-700 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-white/10 dark:bg-gray-800 dark:text-gray-300"
         >
           {technicians.map((tech) => (
@@ -205,15 +360,17 @@ export default function PartnerMaintenancePage() {
         </select>
         <select
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
+          onChange={(event) => setStatusFilter(event.target.value)}
+          aria-label="Filter schedule by status"
           className="rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-700 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-white/10 dark:bg-gray-800 dark:text-gray-300"
         >
-          {statusOptions.map((s) => (
-            <option key={s} value={s}>
-              {s === 'All' ? 'All Statuses' : s}
+          {STATUS_OPTIONS.map((status) => (
+            <option key={status} value={status}>
+              {status === 'All' ? 'All Statuses' : status}
             </option>
           ))}
         </select>
+
         <div className="ml-auto flex items-center gap-2">
           <StatusDot status="scheduled" /><span className="text-xs text-gray-500">Scheduled</span>
           <StatusDot status="completed" /><span className="text-xs text-gray-500">Completed</span>
@@ -222,38 +379,42 @@ export default function PartnerMaintenancePage() {
         </div>
       </div>
 
-      {/* Week Calendar View */}
       <div className="flex gap-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className={cn(
-            'flex-1 overflow-hidden rounded-2xl border border-gray-200/60 bg-white/80 backdrop-blur-xl dark:border-white/5 dark:bg-gray-900/50',
-          )}
+          className="flex-1 overflow-hidden rounded-2xl border border-gray-200/60 bg-white/80 backdrop-blur-xl dark:border-white/5 dark:bg-gray-900/50"
         >
-          {/* Week header */}
           <div className="flex items-center justify-between border-b border-gray-100 px-5 py-3 dark:border-white/5">
-            <button className="rounded-lg p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-white/5">
+            <button
+              onClick={() => setWeekOffset((prev) => prev - 1)}
+              aria-label="Go to previous week"
+              title="Go to previous week"
+              className="rounded-lg p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-white/5"
+            >
               <ChevronLeft className="h-5 w-5" />
             </button>
             <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
-              March 10 - 16, 2026
+              {days[0]?.dateLabel} - {days[6]?.dateLabel}
             </h3>
-            <button className="rounded-lg p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-white/5">
+            <button
+              onClick={() => setWeekOffset((prev) => prev + 1)}
+              aria-label="Go to next week"
+              title="Go to next week"
+              className="rounded-lg p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-white/5"
+            >
               <ChevronRight className="h-5 w-5" />
             </button>
           </div>
 
-          {/* Day columns */}
           <div className="grid grid-cols-7 divide-x divide-gray-100 dark:divide-white/5">
-            {weekDays.map((day, dayIndex) => {
-              const isToday = dayIndex === 5; // Saturday Mar 15
-              const dayVisits = getVisitsForDay(dayIndex);
+            {days.map((day) => {
+              const dayVisits = getVisitsForDay(day.key);
+              const isToday = day.key === dateKey(new Date());
 
               return (
-                <div key={day} className="min-h-[320px]">
-                  {/* Day header */}
+                <div key={day.key} className="min-h-[320px]">
                   <div
                     className={cn(
                       'border-b border-gray-100 px-2 py-2 text-center dark:border-white/5',
@@ -261,14 +422,20 @@ export default function PartnerMaintenancePage() {
                     )}
                   >
                     <p className={cn('text-[11px] font-semibold uppercase', isToday ? 'text-emerald-600' : 'text-gray-400')}>
-                      {day}
+                      {day.dayLabel}
                     </p>
-                    <p className={cn('text-xs font-medium', isToday ? 'text-emerald-700 dark:text-emerald-400' : 'text-gray-600 dark:text-gray-300')}>
-                      {weekDates[dayIndex]}
+                    <p
+                      className={cn(
+                        'text-xs font-medium',
+                        isToday
+                          ? 'text-emerald-700 dark:text-emerald-400'
+                          : 'text-gray-600 dark:text-gray-300',
+                      )}
+                    >
+                      {day.dateLabel}
                     </p>
                   </div>
 
-                  {/* Visit cards */}
                   <div className="space-y-1.5 p-1.5">
                     {dayVisits.map((visit) => (
                       <VisitCard
@@ -289,18 +456,16 @@ export default function PartnerMaintenancePage() {
           </div>
         </motion.div>
 
-        {/* Visit Detail Panel */}
         <AnimatePresence>
           {selectedVisit && (
             <motion.div
-              initial={{ opacity: 0, x: 20, width: 0 }}
-              animate={{ opacity: 1, x: 0, width: 320 }}
-              exit={{ opacity: 0, x: 20, width: 0 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-              className="shrink-0 overflow-hidden rounded-2xl border border-gray-200/60 bg-white/80 backdrop-blur-xl dark:border-white/5 dark:bg-gray-900/50"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ type: 'spring', stiffness: 280, damping: 28 }}
+              className="w-[320px] shrink-0 overflow-hidden rounded-2xl border border-gray-200/60 bg-white/80 backdrop-blur-xl dark:border-white/5 dark:bg-gray-900/50"
             >
               <div className="p-5">
-                {/* Header */}
                 <div className="mb-4 flex items-start justify-between">
                   <div>
                     <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Visit Details</h4>
@@ -313,13 +478,14 @@ export default function PartnerMaintenancePage() {
                   </div>
                   <button
                     onClick={() => setSelectedVisit(null)}
+                    aria-label="Close visit details"
+                    title="Close visit details"
                     className="rounded-lg p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-white/5"
                   >
                     <X className="h-4 w-4" />
                   </button>
                 </div>
 
-                {/* Details */}
                 <div className="space-y-4">
                   <div className="rounded-xl bg-gray-50/80 p-3 dark:bg-white/[0.03]">
                     <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-gray-500">
@@ -350,25 +516,27 @@ export default function PartnerMaintenancePage() {
                       <Clock className="h-3.5 w-3.5" />
                       Schedule
                     </div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                      {selectedVisit.time} - Duration: {selectedVisit.duration}
-                    </p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">{selectedVisit.time}</p>
                   </div>
 
                   <div className="rounded-xl bg-gray-50/80 p-3 dark:bg-white/[0.03]">
                     <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-gray-500">
                       <Leaf className="h-3.5 w-3.5" />
-                      Plants to Service
+                      Plant Context
                     </div>
                     <div className="flex flex-wrap gap-1.5">
-                      {selectedVisit.plants.map((plant) => (
-                        <span
-                          key={plant}
-                          className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400"
-                        >
-                          {plant}
-                        </span>
-                      ))}
+                      {selectedVisit.plants.length > 0 ? (
+                        selectedVisit.plants.map((plant) => (
+                          <span
+                            key={plant}
+                            className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400"
+                          >
+                            {plant}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-xs text-gray-500">No plant label available</span>
+                      )}
                     </div>
                   </div>
 

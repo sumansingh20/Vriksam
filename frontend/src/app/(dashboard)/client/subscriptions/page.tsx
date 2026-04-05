@@ -1,6 +1,8 @@
 'use client';
 
+import { useMemo } from 'react';
 import { motion } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
 import {
   CreditCard,
   Calendar,
@@ -10,63 +12,49 @@ import {
   Sprout,
   MapPin,
   Star,
+  Loader2,
 } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
+import { useSubscriptionPlans, useSubscriptions } from '@/hooks/use-subscriptions';
+import api from '@/services/api';
 import { cn } from '@/lib/utils';
 
-/* -------------------------------------------------------------------------- */
-/*  Mock Data                                                                  */
-/* -------------------------------------------------------------------------- */
-
-const currentPlan = {
-  name: 'Professional',
-  billingCycle: 'Monthly',
-  nextBillingDate: 'April 1, 2026',
-  amount: 14999,
-  plantsUsed: 142,
-  plantsLimit: 200,
-  locationsUsed: 3,
-  locationsLimit: 5,
-};
-
-const billingHistory = [
-  { id: 'INV-2026-0350', date: '2026-03-01', amount: 14999, status: 'paid' as const },
-  { id: 'INV-2026-0312', date: '2026-02-01', amount: 14999, status: 'paid' as const },
-  { id: 'INV-2026-0274', date: '2026-01-01', amount: 14999, status: 'paid' as const },
-  { id: 'INV-2025-0236', date: '2025-12-01', amount: 14999, status: 'paid' as const },
-  { id: 'INV-2025-0198', date: '2025-11-01', amount: 14999, status: 'paid' as const },
-  { id: 'INV-2025-0160', date: '2025-10-01', amount: 12999, status: 'paid' as const },
-];
-
-const availablePlans = [
-  {
-    name: 'Starter',
-    price: 4999,
-    features: ['Up to 50 plants', 'Basic monitoring', 'Monthly maintenance', 'Email support'],
-    current: false,
-  },
-  {
-    name: 'Professional',
-    price: 14999,
-    features: ['Up to 200 plants', 'AI health monitoring', 'Weekly maintenance', 'Priority support', 'ESG reports'],
-    current: true,
-    popular: true,
-  },
-  {
-    name: 'Enterprise',
-    price: 49999,
-    features: ['Unlimited plants', 'Advanced AI analytics', 'Daily maintenance', 'Dedicated manager', 'Custom ESG reporting', 'API access'],
-    current: false,
-  },
-];
-
-function formatINR(amount: number): string {
-  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0 }).format(amount);
+interface ApiEnvelope<T> {
+  success: boolean;
+  data: T;
 }
 
-/* -------------------------------------------------------------------------- */
-/*  Progress Bar                                                               */
-/* -------------------------------------------------------------------------- */
+interface InvoiceRow {
+  id: string;
+  invoiceNumber?: string;
+  issueDate?: string;
+  totalAmount?: number;
+  status?: string;
+  pdfUrl?: string;
+}
+
+interface BillingEntry {
+  id: string;
+  date: string;
+  amount: number;
+  status: 'paid' | 'pending' | 'failed';
+  pdfUrl?: string;
+}
+
+function formatINR(amount: number): string {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    minimumFractionDigits: 0,
+  }).format(amount);
+}
+
+function normalizeInvoiceStatus(value?: string): BillingEntry['status'] {
+  const status = (value || '').toLowerCase();
+  if (status.includes('paid') || status.includes('completed')) return 'paid';
+  if (status.includes('overdue') || status.includes('cancel') || status.includes('fail')) return 'failed';
+  return 'pending';
+}
 
 function UsageBar({
   label,
@@ -81,7 +69,8 @@ function UsageBar({
   icon: React.ElementType;
   color: string;
 }) {
-  const percent = Math.round((used / limit) * 100);
+  const safeLimit = Math.max(limit, 1);
+  const percent = Math.round((used / safeLimit) * 100);
   const isHigh = percent > 80;
 
   return (
@@ -98,7 +87,7 @@ function UsageBar({
       <div className="h-2.5 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
         <motion.div
           initial={{ width: 0 }}
-          animate={{ width: `${percent}%` }}
+          animate={{ width: `${Math.min(percent, 100)}%` }}
           transition={{ duration: 0.8, ease: 'easeOut' }}
           className={cn(
             'h-full rounded-full',
@@ -108,18 +97,75 @@ function UsageBar({
           )}
         />
       </div>
-      <p className="mt-1.5 text-xs text-gray-400">
-        {percent}% used {isHigh && '- Consider upgrading'}
-      </p>
+      <p className="mt-1.5 text-xs text-gray-400">{Math.min(percent, 100)}% used {isHigh ? '- Consider upgrading' : ''}</p>
     </div>
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/*  Page                                                                       */
-/* -------------------------------------------------------------------------- */
-
 export default function ClientSubscriptionsPage() {
+  const subscriptionsQuery = useSubscriptions(
+    {
+      page: 1,
+      pageSize: 20,
+      sortBy: 'createdAt',
+      sortOrder: 'desc',
+    },
+    {
+      staleTime: 60 * 1000,
+    },
+  );
+
+  const plansQuery = useSubscriptionPlans({
+    staleTime: 10 * 60 * 1000,
+  });
+
+  const invoicesQuery = useQuery({
+    queryKey: ['client', 'subscriptions', 'invoices'],
+    queryFn: async () => {
+      const response = await api.get<ApiEnvelope<InvoiceRow[]> & { pagination?: unknown }>('/invoices', {
+        params: {
+          page: 1,
+          limit: 50,
+          sortBy: 'issueDate',
+          sortOrder: 'desc',
+        },
+      });
+
+      return response.data ?? [];
+    },
+    staleTime: 60 * 1000,
+  });
+
+  const currentSubscription = useMemo(() => {
+    const subscriptions = subscriptionsQuery.data?.subscriptions ?? [];
+
+    return (
+      subscriptions.find((subscription) => String(subscription.status).toLowerCase().includes('active')) ||
+      subscriptions.find((subscription) => String(subscription.status).toLowerCase().includes('trial')) ||
+      subscriptions[0]
+    );
+  }, [subscriptionsQuery.data?.subscriptions]);
+
+  const currentPlan = useMemo(() => {
+    if (!currentSubscription) return undefined;
+    return currentSubscription.plan || plansQuery.data?.find((plan) => plan.id === currentSubscription.planId);
+  }, [currentSubscription, plansQuery.data]);
+
+  const billingHistory = useMemo<BillingEntry[]>(
+    () =>
+      (invoicesQuery.data ?? []).map((invoice) => ({
+        id: invoice.invoiceNumber || invoice.id,
+        date: invoice.issueDate || '',
+        amount: typeof invoice.totalAmount === 'number' ? invoice.totalAmount : 0,
+        status: normalizeInvoiceStatus(invoice.status),
+        pdfUrl: invoice.pdfUrl,
+      })),
+    [invoicesQuery.data],
+  );
+
+  const isLoading = subscriptionsQuery.isLoading || plansQuery.isLoading || invoicesQuery.isLoading;
+  const hasError = subscriptionsQuery.isError || plansQuery.isError || invoicesQuery.isError;
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -131,73 +177,92 @@ export default function ClientSubscriptionsPage() {
         ]}
       />
 
-      {/* Current Plan Card */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="rounded-2xl border border-emerald-200/60 bg-gradient-to-r from-emerald-50 to-green-50 p-6 shadow-lg dark:border-emerald-500/20 dark:from-emerald-500/5 dark:to-green-500/5"
-      >
-        <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10">
-                <CreditCard className="h-6 w-6 text-emerald-600" />
-              </div>
+      {isLoading && (
+        <div className="flex items-center gap-2 rounded-2xl border border-gray-200/70 bg-white/80 px-4 py-3 text-sm text-gray-600 dark:border-white/10 dark:bg-gray-900/40 dark:text-gray-300">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Loading live subscription data...
+        </div>
+      )}
+
+      {hasError && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-200">
+          Unable to load subscription details right now.
+        </div>
+      )}
+
+      {currentSubscription && currentPlan ? (
+        <>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-2xl border border-emerald-200/60 bg-gradient-to-r from-emerald-50 to-green-50 p-6 shadow-lg dark:border-emerald-500/20 dark:from-emerald-500/5 dark:to-green-500/5"
+          >
+            <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                    {currentPlan.name} Plan
-                  </h3>
-                  <span className="rounded-full bg-emerald-500 px-2 py-0.5 text-[10px] font-bold text-white">
-                    ACTIVE
-                  </span>
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10">
+                    <CreditCard className="h-6 w-6 text-emerald-600" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-white">{currentPlan.name} Plan</h3>
+                      <span className="rounded-full bg-emerald-500 px-2 py-0.5 text-[10px] font-bold text-white">{String(currentSubscription.status).toUpperCase()}</span>
+                    </div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{String(currentSubscription.billingCycle).toLowerCase()} billing</p>
+                  </div>
                 </div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {currentPlan.billingCycle} billing
+              </div>
+              <div className="text-right">
+                <p className="text-3xl font-bold text-emerald-700 dark:text-emerald-400">
+                  {formatINR(currentSubscription.monthlyAmount || 0)}
+                  <span className="text-sm font-normal text-gray-500">/mo</span>
                 </p>
+                <div className="mt-1 flex items-center justify-end gap-1 text-xs text-gray-500">
+                  <Calendar className="h-3 w-3" />
+                  Next billing:{' '}
+                  {currentSubscription.nextBillingDate
+                    ? new Date(currentSubscription.nextBillingDate).toLocaleDateString('en-IN', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                      })
+                    : '-'}
+                </div>
               </div>
             </div>
-          </div>
-          <div className="text-right">
-            <p className="text-3xl font-bold text-emerald-700 dark:text-emerald-400">
-              {formatINR(currentPlan.amount)}
-              <span className="text-sm font-normal text-gray-500">/mo</span>
-            </p>
-            <div className="mt-1 flex items-center gap-1 text-xs text-gray-500">
-              <Calendar className="h-3 w-3" />
-              Next billing: {currentPlan.nextBillingDate}
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="rounded-2xl border border-gray-200/60 bg-white/80 p-6 backdrop-blur-xl dark:border-white/5 dark:bg-gray-900/50"
+          >
+            <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">Usage</h3>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <UsageBar
+                label="Plants"
+                used={currentSubscription.totalPlants || 0}
+                limit={currentPlan.maxPlants || 0}
+                icon={Sprout}
+                color="text-emerald-600"
+              />
+              <UsageBar
+                label="Locations"
+                used={currentSubscription.totalLocations || 0}
+                limit={currentPlan.maxLocations || 0}
+                icon={MapPin}
+                color="text-sky-600"
+              />
             </div>
-          </div>
+          </motion.div>
+        </>
+      ) : (
+        <div className="rounded-2xl border border-dashed border-gray-200 px-4 py-10 text-center text-sm text-gray-500 dark:border-white/10 dark:text-gray-400">
+          No active subscription found for your account.
         </div>
-      </motion.div>
+      )}
 
-      {/* Usage Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="rounded-2xl border border-gray-200/60 bg-white/80 p-6 backdrop-blur-xl dark:border-white/5 dark:bg-gray-900/50"
-      >
-        <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">Usage</h3>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <UsageBar
-            label="Plants"
-            used={currentPlan.plantsUsed}
-            limit={currentPlan.plantsLimit}
-            icon={Sprout}
-            color="text-emerald-600"
-          />
-          <UsageBar
-            label="Locations"
-            used={currentPlan.locationsUsed}
-            limit={currentPlan.locationsLimit}
-            icon={MapPin}
-            color="text-sky-600"
-          />
-        </div>
-      </motion.div>
-
-      {/* Billing History */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -205,51 +270,52 @@ export default function ClientSubscriptionsPage() {
         className="rounded-2xl border border-gray-200/60 bg-white/80 backdrop-blur-xl dark:border-white/5 dark:bg-gray-900/50"
       >
         <div className="border-b border-gray-100 px-6 py-4 dark:border-white/5">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-            Billing History
-          </h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Billing History</h3>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[500px]">
             <thead>
               <tr className="border-b border-gray-50 dark:border-white/5">
-                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                  Invoice
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                  Date
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">
-                  Amount
-                </th>
-                <th className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-500">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-500">
-                  Download
-                </th>
+                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Invoice</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Date</th>
+                <th className="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">Amount</th>
+                <th className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-500">Status</th>
+                <th className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-500">Download</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50 dark:divide-white/5">
               {billingHistory.map((invoice) => (
                 <tr key={invoice.id} className="transition-colors hover:bg-gray-50/50 dark:hover:bg-white/[0.02]">
-                  <td className="px-6 py-3.5 text-sm font-mono font-medium text-gray-900 dark:text-white">
-                    {invoice.id}
-                  </td>
+                  <td className="px-6 py-3.5 text-sm font-mono font-medium text-gray-900 dark:text-white">{invoice.id}</td>
                   <td className="px-6 py-3.5 text-sm text-gray-500">
-                    {new Date(invoice.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    {invoice.date
+                      ? new Date(invoice.date).toLocaleDateString('en-IN', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric',
+                        })
+                      : '-'}
                   </td>
-                  <td className="px-6 py-3.5 text-right text-sm font-semibold text-gray-900 dark:text-white">
-                    {formatINR(invoice.amount)}
-                  </td>
+                  <td className="px-6 py-3.5 text-right text-sm font-semibold text-gray-900 dark:text-white">{formatINR(invoice.amount)}</td>
                   <td className="px-6 py-3.5 text-center">
-                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
+                    <span className={cn(
+                      'inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold',
+                      invoice.status === 'paid'
+                        ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
+                        : invoice.status === 'pending'
+                          ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400'
+                          : 'bg-red-500/10 text-red-700 dark:text-red-400',
+                    )}>
                       <Check className="h-3 w-3" />
-                      Paid
+                      {invoice.status === 'paid' ? 'Paid' : invoice.status === 'pending' ? 'Pending' : 'Failed'}
                     </span>
                   </td>
                   <td className="px-6 py-3.5 text-center">
-                    <button className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-emerald-600 transition-colors hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-500/10">
+                    <button
+                      className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-emerald-600 transition-colors hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60 dark:text-emerald-400 dark:hover:bg-emerald-500/10"
+                      disabled={!invoice.pdfUrl}
+                      title={invoice.pdfUrl ? 'Download invoice PDF' : 'Invoice PDF not available'}
+                    >
                       <Download className="h-3 w-3" />
                       PDF
                     </button>
@@ -261,76 +327,76 @@ export default function ClientSubscriptionsPage() {
         </div>
       </motion.div>
 
-      {/* Upgrade Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-      >
-        <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
-          Available Plans
-        </h3>
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+        <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">Available Plans</h3>
         <div className="grid gap-6 lg:grid-cols-3">
-          {availablePlans.map((plan, i) => (
-            <motion.div
-              key={plan.name}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 + i * 0.1 }}
-              className={cn(
-                'relative rounded-2xl border p-6',
-                plan.current
-                  ? 'border-emerald-300 bg-emerald-50/50 shadow-lg shadow-emerald-500/5 dark:border-emerald-500/30 dark:bg-emerald-500/5'
-                  : 'border-gray-200/60 bg-white/80 backdrop-blur-xl dark:border-white/5 dark:bg-gray-900/50',
-              )}
-            >
-              {plan.popular && (
-                <div className="absolute -top-3 right-4">
-                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500 px-3 py-1 text-[10px] font-bold text-white shadow-lg shadow-emerald-500/25">
-                    <Star className="h-3 w-3 fill-current" />
-                    CURRENT PLAN
-                  </span>
-                </div>
-              )}
+          {(plansQuery.data ?? []).map((plan, index) => {
+            const isCurrent = plan.id === currentSubscription?.planId;
+            const monthlyPrice = plan.priceMonthly || 0;
 
-              <h4 className="text-lg font-bold text-gray-900 dark:text-white">{plan.name}</h4>
-              <p className="mt-2">
-                <span className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {formatINR(plan.price)}
-                </span>
-                <span className="text-sm text-gray-500">/mo</span>
-              </p>
-
-              <ul className="mt-4 space-y-2">
-                {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                    <Check className={cn('h-4 w-4', plan.current ? 'text-emerald-600' : 'text-gray-400')} />
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-
-              <button
-                disabled={plan.current}
+            return (
+              <motion.div
+                key={plan.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 + index * 0.1 }}
                 className={cn(
-                  'mt-6 flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold transition-all',
-                  plan.current
-                    ? 'cursor-default bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
-                    : 'border border-gray-200 bg-white text-gray-700 hover:border-emerald-300 hover:text-emerald-700 dark:border-white/10 dark:bg-gray-800 dark:text-gray-300',
+                  'relative rounded-2xl border p-6',
+                  isCurrent
+                    ? 'border-emerald-300 bg-emerald-50/50 shadow-lg shadow-emerald-500/5 dark:border-emerald-500/30 dark:bg-emerald-500/5'
+                    : 'border-gray-200/60 bg-white/80 backdrop-blur-xl dark:border-white/5 dark:bg-gray-900/50',
                 )}
               >
-                {plan.current ? (
-                  'Current Plan'
-                ) : plan.price > currentPlan.amount ? (
-                  <>
-                    Upgrade <ArrowUpRight className="h-4 w-4" />
-                  </>
-                ) : (
-                  'Downgrade'
+                {isCurrent && (
+                  <div className="absolute -top-3 right-4">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500 px-3 py-1 text-[10px] font-bold text-white shadow-lg shadow-emerald-500/25">
+                      <Star className="h-3 w-3 fill-current" />
+                      CURRENT PLAN
+                    </span>
+                  </div>
                 )}
-              </button>
-            </motion.div>
-          ))}
+
+                <h4 className="text-lg font-bold text-gray-900 dark:text-white">{plan.name}</h4>
+                <p className="mt-2">
+                  <span className="text-2xl font-bold text-gray-900 dark:text-white">{formatINR(monthlyPrice)}</span>
+                  <span className="text-sm text-gray-500">/mo</span>
+                </p>
+
+                <ul className="mt-4 space-y-2">
+                  {plan.features.map((feature) => (
+                    <li key={feature} className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                      <Check className={cn('h-4 w-4', isCurrent ? 'text-emerald-600' : 'text-gray-400')} />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!isCurrent) {
+                      window.location.assign('/contact');
+                    }
+                  }}
+                  disabled={isCurrent}
+                  className={cn(
+                    'mt-6 flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold transition-all',
+                    isCurrent
+                      ? 'cursor-default bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
+                      : 'border border-gray-200 bg-white text-gray-700 hover:border-emerald-300 hover:text-emerald-700 dark:border-white/10 dark:bg-gray-800 dark:text-gray-300',
+                  )}
+                >
+                  {isCurrent ? (
+                    'Current Plan'
+                  ) : (
+                    <>
+                      Request Plan Change <ArrowUpRight className="h-4 w-4" />
+                    </>
+                  )}
+                </button>
+              </motion.div>
+            );
+          })}
         </div>
       </motion.div>
     </div>

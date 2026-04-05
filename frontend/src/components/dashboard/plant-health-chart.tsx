@@ -25,16 +25,27 @@ interface PlantHealthChartProps {
   data?: PlantHealthData[];
 }
 
-/* -------------------------------------------------------------------------- */
-/*  Default data                                                              */
-/* -------------------------------------------------------------------------- */
+function getStatusColorClass(statusName: string): string {
+  const normalized = statusName.toLowerCase();
 
-const DEFAULT_DATA: PlantHealthData[] = [
-  { name: 'Healthy', value: 284, color: '#10b981' },
-  { name: 'Needs Attention', value: 47, color: '#f59e0b' },
-  { name: 'Critical', value: 12, color: '#ef4444' },
-  { name: 'Replaced', value: 8, color: '#8b5cf6' },
-];
+  if (normalized === 'healthy') {
+    return 'bg-emerald-500';
+  }
+
+  if (normalized.includes('attention')) {
+    return 'bg-amber-500';
+  }
+
+  if (normalized === 'critical') {
+    return 'bg-red-500';
+  }
+
+  if (normalized === 'replaced') {
+    return 'bg-violet-500';
+  }
+
+  return 'bg-gray-400';
+}
 
 /* -------------------------------------------------------------------------- */
 /*  Custom Tooltip                                                            */
@@ -61,10 +72,7 @@ function CustomTooltip({
   return (
     <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-sm">
       <div className="flex items-center gap-2">
-        <div
-          className="h-3 w-3 rounded-full"
-          style={{ backgroundColor: item.payload.color }}
-        />
+        <div className={`h-3 w-3 rounded-full ${getStatusColorClass(item.name)}`} />
         <span className="text-sm font-medium text-gray-900">
           {item.name}
         </span>
@@ -85,10 +93,7 @@ function CustomLegend({ data, total }: { data: PlantHealthData[]; total: number 
     <div className="mt-4 grid grid-cols-2 gap-2">
       {data.map((entry) => (
         <div key={entry.name} className="flex items-center gap-2">
-          <div
-            className="h-2.5 w-2.5 rounded-full"
-            style={{ backgroundColor: entry.color }}
-          />
+          <div className={`h-2.5 w-2.5 rounded-full ${getStatusColorClass(entry.name)}`} />
           <span className="text-xs text-gray-500">
             {entry.name}
           </span>
@@ -105,9 +110,10 @@ function CustomLegend({ data, total }: { data: PlantHealthData[]; total: number 
 /*  Component                                                                 */
 /* -------------------------------------------------------------------------- */
 
-export function PlantHealthChart({ data = DEFAULT_DATA }: PlantHealthChartProps) {
+export function PlantHealthChart({ data }: PlantHealthChartProps) {
+  const chartData = data ?? [];
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
-  const total = data.reduce((sum, d) => sum + d.value, 0);
+  const total = chartData.reduce((sum, d) => sum + d.value, 0);
 
   return (
     <motion.div
@@ -120,51 +126,60 @@ export function PlantHealthChart({ data = DEFAULT_DATA }: PlantHealthChartProps)
         Plant Health Distribution
       </h3>
 
-      <div className="relative mt-4 h-64">
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie
-              data={data}
-              cx="50%"
-              cy="50%"
-              innerRadius={65}
-              outerRadius={activeIndex !== null ? 95 : 90}
-              paddingAngle={3}
-              dataKey="value"
-              strokeWidth={0}
-              animationBegin={0}
-              animationDuration={1200}
-              onMouseEnter={(_, index) => setActiveIndex(index)}
-              onMouseLeave={() => setActiveIndex(null)}
-            >
-              {data.map((entry, index) => (
-                <Cell
-                  key={entry.name}
-                  fill={entry.color}
-                  opacity={activeIndex !== null && activeIndex !== index ? 0.5 : 1}
-                  style={{ transition: 'opacity 0.2s ease' }}
-                />
-              ))}
-            </Pie>
-            <Tooltip content={<CustomTooltip />} />
-            <Legend content={() => null} />
-          </PieChart>
-        </ResponsiveContainer>
-
-        {/* Center label */}
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <div className="text-center">
-            <p className="text-3xl font-bold text-gray-900">
-              {total}
-            </p>
-            <p className="text-xs text-gray-500">
-              Total Plants
-            </p>
-          </div>
+      {chartData.length === 0 ? (
+        <div className="mt-4 rounded-lg border border-dashed border-gray-200 bg-gray-50/80 px-4 py-12 text-center">
+          <p className="text-sm font-medium text-gray-700">No plant health data available</p>
+          <p className="mt-1 text-xs text-gray-500">Plant health distribution will appear after inspections are logged.</p>
         </div>
-      </div>
+      ) : (
+        <>
+          <div className="relative mt-4 h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={chartData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={65}
+                  outerRadius={activeIndex !== null ? 95 : 90}
+                  paddingAngle={3}
+                  dataKey="value"
+                  strokeWidth={0}
+                  animationBegin={0}
+                  animationDuration={1200}
+                  onMouseEnter={(_, index) => setActiveIndex(index)}
+                  onMouseLeave={() => setActiveIndex(null)}
+                >
+                  {chartData.map((entry, index) => (
+                    <Cell
+                      key={entry.name}
+                      fill={entry.color}
+                      opacity={activeIndex !== null && activeIndex !== index ? 0.5 : 1}
+                      className="transition-opacity duration-200"
+                    />
+                  ))}
+                </Pie>
+                <Tooltip content={<CustomTooltip />} />
+                <Legend content={() => null} />
+              </PieChart>
+            </ResponsiveContainer>
 
-      <CustomLegend data={data} total={total} />
+            {/* Center label */}
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+              <div className="text-center">
+                <p className="text-3xl font-bold text-gray-900">
+                  {total}
+                </p>
+                <p className="text-xs text-gray-500">
+                  Total Plants
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <CustomLegend data={chartData} total={total} />
+        </>
+      )}
     </motion.div>
   );
 }

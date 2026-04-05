@@ -204,28 +204,12 @@ export function HeroSection() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 2 }}
-          className="absolute inset-0"
-          style={{
-            backgroundImage: `
-              radial-gradient(ellipse 80% 50% at 50% -20%, rgba(16, 185, 129, 0.15), transparent),
-              radial-gradient(ellipse 60% 40% at 80% 50%, rgba(20, 184, 166, 0.1), transparent),
-              radial-gradient(ellipse 50% 30% at 20% 80%, rgba(52, 211, 153, 0.08), transparent)
-            `,
-          }}
+          className="hero-radial-atmosphere absolute inset-0"
         />
       </div>
 
       {/* Premium grid pattern */}
-      <div
-        className="absolute inset-0 opacity-[0.4]"
-        style={{
-          backgroundImage: `
-            linear-gradient(rgba(16, 185, 129, 0.03) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(16, 185, 129, 0.03) 1px, transparent 1px)
-          `,
-          backgroundSize: '60px 60px',
-        }}
-      />
+      <div className="hero-grid-pattern absolute inset-0 opacity-[0.4]" />
 
       {/* Animated gradient orbs */}
       <GradientOrb
@@ -366,9 +350,8 @@ export function HeroSection() {
             </Link>
 
             {/* Secondary CTA */}
-            <motion.button
-              whileHover={{ scale: 1.02, y: -2 }}
-              whileTap={{ scale: 0.98 }}
+            <Link
+              href="/case-studies"
               className={cn(
                 'group flex items-center gap-3 rounded-full',
                 'bg-white/80 backdrop-blur-xl hover:bg-white',
@@ -378,11 +361,11 @@ export function HeroSection() {
                 'transition-all duration-300',
               )}
             >
-              <span className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 shadow-lg shadow-emerald-500/30 group-hover:shadow-emerald-500/50 transition-shadow">
-                <Play className="w-3.5 h-3.5 text-white ml-0.5" fill="currentColor" />
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 shadow-lg shadow-emerald-500/30 transition-shadow group-hover:shadow-emerald-500/50">
+                <Play className="ml-0.5 h-3.5 w-3.5 text-white" fill="currentColor" />
               </span>
-              Watch demo
-            </motion.button>
+              View platform tour
+            </Link>
           </motion.div>
 
           {/* Hero visual with floating stats */}

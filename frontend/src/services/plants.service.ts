@@ -22,31 +22,15 @@ const PLANTS_PREFIX = '/plants';
  */
 export interface AddHealthLogPayload {
   healthScore: number;
-  healthStatus: string;
-  observations: string;
-  recommendations: string;
-  issues?: Array<{
-    type: string;
-    description: string;
-    severity: 'mild' | 'moderate' | 'severe';
-    affectedParts: string[];
-  }>;
-  treatmentsApplied?: Array<{
-    type: string;
-    product?: string;
-    dosage?: string;
-    description: string;
-    followUpRequired: boolean;
-    followUpDate?: string;
-  }>;
-  environmentalReadings?: {
-    temperature?: number;
-    humidity?: number;
-    lightLevel?: number;
-    soilMoisture?: number;
-    soilPh?: number;
-  };
-  photos?: string[];
+  notes?: string;
+  diseaseDetected?: string;
+  imageUrl?: string;
+  temperature?: number;
+  humidity?: number;
+  soilMoisture?: number;
+  lightLevel?: number;
+  aiAnalysis?: string;
+  recommendations?: string;
 }
 
 export const plantsService = {
@@ -140,7 +124,7 @@ export const plantsService = {
     data: AddHealthLogPayload
   ): Promise<PlantHealthLog> {
     const response = await api.post<ApiResponse<PlantHealthLog>>(
-      `${PLANTS_PREFIX}/${plantId}/health-logs`,
+      `${PLANTS_PREFIX}/${plantId}/health-check`,
       data
     );
     return response.data;

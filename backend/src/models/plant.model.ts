@@ -82,7 +82,6 @@ const plantSchema = new Schema<IPlantDocument, IPlantModel>(
   {
     plantId: {
       type: String,
-      unique: true,
     },
     name: {
       type: String,

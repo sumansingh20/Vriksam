@@ -11,7 +11,11 @@ import plantsController from '../controllers/plants.controller';
 
 const router = Router();
 
-// All plant routes require authentication
+// Public catalog routes
+router.get('/catalog', plantsController.listCatalog);
+router.get('/catalog/:slug', plantsController.getCatalogItem);
+
+// All remaining plant routes require authentication
 router.use(authenticate);
 
 // Species routes (must be before /:id to avoid conflict)

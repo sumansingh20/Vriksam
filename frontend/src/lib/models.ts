@@ -442,7 +442,6 @@ const userSchema = new Schema<IUserDocument>(
     email: {
       type: String,
       required: [true, 'Email is required'],
-      unique: true,
       lowercase: true,
       trim: true,
       match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email address'],
@@ -784,7 +783,7 @@ const replacementEntrySchema = new Schema(
 
 const plantSchema = new Schema<IPlantDocument>(
   {
-    plantId: { type: String, unique: true },
+    plantId: { type: String },
     name: {
       type: String,
       required: [true, 'Plant name is required'],
@@ -919,7 +918,6 @@ const subscriptionPlanSchema = new Schema<ISubscriptionPlanDocument>(
     slug: {
       type: String,
       required: [true, 'Slug is required'],
-      unique: true,
       trim: true,
       lowercase: true,
     },
@@ -1169,7 +1167,7 @@ const paymentSchema = new Schema<IPaymentDocument>(
       required: [true, 'Organization ID is required'],
     },
     subscriptionId: { type: Schema.Types.ObjectId, ref: 'Subscription' },
-    invoiceNumber: { type: String, unique: true },
+    invoiceNumber: { type: String },
     amount: {
       type: Number,
       required: [true, 'Amount is required'],
@@ -1287,7 +1285,6 @@ const notificationSchema = new Schema<INotificationDocument>(
 
 notificationSchema.index({ userId: 1 });
 notificationSchema.index({ isRead: 1 });
-notificationSchema.index({ createdAt: 1 });
 // TTL: auto-delete after 90 days
 notificationSchema.index({ createdAt: 1 }, { expireAfterSeconds: 90 * 24 * 60 * 60 });
 

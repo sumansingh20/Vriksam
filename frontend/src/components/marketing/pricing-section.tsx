@@ -205,32 +205,33 @@ function PricingCard({
         {/* Features */}
         <ul className="space-y-4 mb-10">
           {plan.features.map((feature, i) => (
-            <motion.li
-              key={feature}
-              initial={{ opacity: 0, x: -10 }}
-              animate={isInView ? { opacity: 1, x: 0 } : {}}
-              transition={{
-                duration: 0.3,
-                delay: index * 0.12 + i * 0.05 + 0.4,
-              }}
-              className="flex items-center gap-3"
-            >
-              <div className={cn(
-                'flex items-center justify-center w-6 h-6 rounded-full shrink-0',
-                plan.popular ? 'bg-emerald-500/20' : 'bg-emerald-50',
-              )}>
-                <Check className={cn(
-                  'w-3.5 h-3.5',
-                  plan.popular ? 'text-emerald-400' : 'text-emerald-600',
-                )} strokeWidth={2.5} />
-              </div>
-              <span className={cn(
-                'text-sm',
-                plan.popular ? 'text-gray-300' : 'text-gray-600',
-              )}>
-                {feature}
-              </span>
-            </motion.li>
+            <li key={feature}>
+              <motion.div
+                initial={{ opacity: 0, x: -10 }}
+                animate={isInView ? { opacity: 1, x: 0 } : {}}
+                transition={{
+                  duration: 0.3,
+                  delay: index * 0.12 + i * 0.05 + 0.4,
+                }}
+                className="flex items-center gap-3"
+              >
+                <div className={cn(
+                  'flex items-center justify-center w-6 h-6 rounded-full shrink-0',
+                  plan.popular ? 'bg-emerald-500/20' : 'bg-emerald-50',
+                )}>
+                  <Check className={cn(
+                    'w-3.5 h-3.5',
+                    plan.popular ? 'text-emerald-400' : 'text-emerald-600',
+                  )} strokeWidth={2.5} />
+                </div>
+                <span className={cn(
+                  'text-sm',
+                  plan.popular ? 'text-gray-300' : 'text-gray-600',
+                )}>
+                  {feature}
+                </span>
+              </motion.div>
+            </li>
           ))}
         </ul>
 

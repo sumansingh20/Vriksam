@@ -2,7 +2,12 @@ import { Request, Response } from 'express';
 import User, { UserRole, UserStatus } from '../models/user.model';
 import authService from '../services/auth.service';
 import emailService from '../services/email.service';
-import { RegisterInput, LoginInput } from '../validators/auth.validator';
+import {
+  RegisterInput,
+  LoginInput,
+  UpdateProfileInput,
+  ChangePasswordInput,
+} from '../validators/auth.validator';
 
 export const authController = {
   /**
@@ -264,6 +269,179 @@ export const authController = {
       res.status(500).json({
         success: false,
         error: 'Failed to fetch profile.',
+      });
+    }
+  },
+
+  /**
+   * PATCH /auth/me
+   * Update current authenticated user's profile/preferences
+   */
+  async updateMe(req: Request, res: Response): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          error: 'Authentication required.',
+        });
+        return;
+      }
+
+      const { name, phone, avatar, preferences } = req.body as UpdateProfileInput;
+
+      const setData: Record<string, unknown> = {};
+
+      if (typeof name === 'string') {
+        setData.name = name.trim();
+      }
+
+      if (phone !== undefined) {
+        const trimmedPhone = phone.trim();
+        setData.phone = trimmedPhone.length > 0 ? trimmedPhone : undefined;
+      }
+
+      if (typeof avatar === 'string') {
+        setData.avatar = avatar.trim();
+      }
+
+      if (preferences?.notifications) {
+        const notifications = preferences.notifications;
+        if (typeof notifications.email === 'boolean') {
+          setData['preferences.notifications.email'] = notifications.email;
+        }
+        if (typeof notifications.push === 'boolean') {
+          setData['preferences.notifications.push'] = notifications.push;
+        }
+        if (typeof notifications.sms === 'boolean') {
+          setData['preferences.notifications.sms'] = notifications.sms;
+        }
+        if (typeof notifications.maintenanceReminders === 'boolean') {
+          setData['preferences.notifications.maintenanceReminders'] =
+            notifications.maintenanceReminders;
+        }
+        if (typeof notifications.paymentAlerts === 'boolean') {
+          setData['preferences.notifications.paymentAlerts'] = notifications.paymentAlerts;
+        }
+        if (typeof notifications.healthAlerts === 'boolean') {
+          setData['preferences.notifications.healthAlerts'] = notifications.healthAlerts;
+        }
+      }
+
+      if (Object.keys(setData).length === 0) {
+        res.status(400).json({
+          success: false,
+          error: 'No valid profile fields provided.',
+        });
+        return;
+      }
+
+      const user = await User.findByIdAndUpdate(
+        req.user.id,
+        { $set: setData },
+        {
+          new: true,
+          runValidators: true,
+        }
+      )
+        .select('-password -refreshTokens -__v')
+        .lean();
+
+      if (!user) {
+        res.status(404).json({
+          success: false,
+          error: 'User not found.',
+        });
+        return;
+      }
+
+      res.status(200).json({
+        success: true,
+        message: 'Profile updated successfully.',
+        data: {
+          id: user._id.toString(),
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          phone: user.phone,
+          avatar: user.avatar,
+          status: user.status,
+          emailVerified: user.emailVerified,
+          lastLoginAt: user.lastLoginAt,
+          preferences: user.preferences,
+          createdAt: user.createdAt,
+        },
+      });
+    } catch (error) {
+      console.error('Update me error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to update profile.',
+      });
+    }
+  },
+
+  /**
+   * POST /auth/change-password
+   * Change current user's password
+   */
+  async changePassword(req: Request, res: Response): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          error: 'Authentication required.',
+        });
+        return;
+      }
+
+      const { currentPassword, newPassword } = req.body as ChangePasswordInput;
+
+      const user = await User.findById(req.user.id).select('+password').lean();
+      if (!user || !user.password) {
+        res.status(404).json({
+          success: false,
+          error: 'User not found.',
+        });
+        return;
+      }
+
+      const isCurrentPasswordValid = await authService.comparePassword(
+        currentPassword,
+        user.password,
+      );
+
+      if (!isCurrentPasswordValid) {
+        res.status(400).json({
+          success: false,
+          error: 'Current password is incorrect.',
+        });
+        return;
+      }
+
+      if (currentPassword === newPassword) {
+        res.status(400).json({
+          success: false,
+          error: 'New password must be different from current password.',
+        });
+        return;
+      }
+
+      const hashedPassword = await authService.hashPassword(newPassword);
+
+      await User.findByIdAndUpdate(req.user.id, {
+        password: hashedPassword,
+        refreshTokens: [],
+      });
+
+      res.status(200).json({
+        success: true,
+        message: 'Password updated successfully.',
+      });
+    } catch (error) {
+      console.error('Change password error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to change password.',
       });
     }
   },

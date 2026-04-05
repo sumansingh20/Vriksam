@@ -29,47 +29,7 @@ interface RevenueChartProps {
   data?: RevenueDataPoint[];
 }
 
-type ViewMode = 'monthly' | 'quarterly' | 'annual';
 type ChartType = 'line' | 'bar';
-
-/* -------------------------------------------------------------------------- */
-/*  Mock data                                                                 */
-/* -------------------------------------------------------------------------- */
-
-const MONTHLY_DATA: RevenueDataPoint[] = [
-  { name: 'Jan', revenue: 42000, expenses: 28000 },
-  { name: 'Feb', revenue: 48000, expenses: 30000 },
-  { name: 'Mar', revenue: 55000, expenses: 32000 },
-  { name: 'Apr', revenue: 51000, expenses: 29000 },
-  { name: 'May', revenue: 62000, expenses: 35000 },
-  { name: 'Jun', revenue: 68000, expenses: 38000 },
-  { name: 'Jul', revenue: 72000, expenses: 40000 },
-  { name: 'Aug', revenue: 78000, expenses: 42000 },
-  { name: 'Sep', revenue: 74000, expenses: 39000 },
-  { name: 'Oct', revenue: 82000, expenses: 44000 },
-  { name: 'Nov', revenue: 88000, expenses: 46000 },
-  { name: 'Dec', revenue: 95000, expenses: 50000 },
-];
-
-const QUARTERLY_DATA: RevenueDataPoint[] = [
-  { name: 'Q1', revenue: 145000, expenses: 90000 },
-  { name: 'Q2', revenue: 181000, expenses: 102000 },
-  { name: 'Q3', revenue: 224000, expenses: 121000 },
-  { name: 'Q4', revenue: 265000, expenses: 140000 },
-];
-
-const ANNUAL_DATA: RevenueDataPoint[] = [
-  { name: '2022', revenue: 520000, expenses: 340000 },
-  { name: '2023', revenue: 680000, expenses: 410000 },
-  { name: '2024', revenue: 815000, expenses: 453000 },
-  { name: '2025', revenue: 950000, expenses: 520000 },
-];
-
-const DATA_MAP: Record<ViewMode, RevenueDataPoint[]> = {
-  monthly: MONTHLY_DATA,
-  quarterly: QUARTERLY_DATA,
-  annual: ANNUAL_DATA,
-};
 
 /* -------------------------------------------------------------------------- */
 /*  Custom Tooltip                                                            */
@@ -78,7 +38,18 @@ const DATA_MAP: Record<ViewMode, RevenueDataPoint[]> = {
 interface ChartTooltipPayload {
   value: number;
   name: string;
-  color: string;
+}
+
+function getSeriesDotClass(seriesName: string): string {
+  if (seriesName.toLowerCase() === 'revenue') {
+    return 'bg-emerald-500';
+  }
+
+  if (seriesName.toLowerCase() === 'expenses') {
+    return 'bg-violet-500';
+  }
+
+  return 'bg-gray-400';
 }
 
 function CustomTooltip({
@@ -99,10 +70,7 @@ function CustomTooltip({
       </p>
       {payload.map((entry) => (
         <div key={entry.name} className="flex items-center gap-2">
-          <div
-            className="h-2.5 w-2.5 rounded-full"
-            style={{ backgroundColor: entry.color }}
-          />
+          <div className={cn('h-2.5 w-2.5 rounded-full', getSeriesDotClass(entry.name))} />
           <span className="text-xs text-gray-500 capitalize">
             {entry.name}:
           </span>
@@ -120,16 +88,8 @@ function CustomTooltip({
 /* -------------------------------------------------------------------------- */
 
 export function RevenueChart({ data }: RevenueChartProps) {
-  const [viewMode, setViewMode] = useState<ViewMode>('monthly');
   const [chartType, setChartType] = useState<ChartType>('line');
-
-  const chartData = data ?? DATA_MAP[viewMode];
-
-  const viewModes: { key: ViewMode; label: string }[] = [
-    { key: 'monthly', label: 'Monthly' },
-    { key: 'quarterly', label: 'Quarterly' },
-    { key: 'annual', label: 'Annual' },
-  ];
+  const chartData = data ?? [];
 
   return (
     <motion.div
@@ -150,24 +110,6 @@ export function RevenueChart({ data }: RevenueChartProps) {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* View mode toggle */}
-          <div className="flex rounded-lg border border-gray-200 bg-gray-50 p-0.5">
-            {viewModes.map((mode) => (
-              <button
-                key={mode.key}
-                onClick={() => setViewMode(mode.key)}
-                className={cn(
-                  'rounded-md px-2.5 py-1 text-xs font-medium transition-all duration-200',
-                  viewMode === mode.key
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700'
-                )}
-              >
-                {mode.label}
-              </button>
-            ))}
-          </div>
-
           {/* Chart type toggle */}
           <div className="flex rounded-lg border border-gray-200 bg-gray-50 p-0.5">
             <button
@@ -196,9 +138,17 @@ export function RevenueChart({ data }: RevenueChartProps) {
         </div>
       </div>
 
+      {chartData.length === 0 && (
+        <div className="mt-6 rounded-lg border border-dashed border-gray-200 bg-gray-50/80 px-4 py-10 text-center">
+          <p className="text-sm font-medium text-gray-700">No revenue data available</p>
+          <p className="mt-1 text-xs text-gray-500">Connect live billing and payment records to visualize trends.</p>
+        </div>
+      )}
+
       {/* Chart */}
-      <div className="mt-6 h-72">
-        <ResponsiveContainer width="100%" height="100%">
+      {chartData.length > 0 && (
+        <div className="mt-6 h-72">
+          <ResponsiveContainer width="100%" height="100%">
           {chartType === 'line' ? (
             <AreaChart data={chartData}>
               <defs>
@@ -274,8 +224,9 @@ export function RevenueChart({ data }: RevenueChartProps) {
               />
             </BarChart>
           )}
-        </ResponsiveContainer>
-      </div>
+          </ResponsiveContainer>
+        </div>
+      )}
 
       {/* Legend */}
       <div className="mt-4 flex items-center gap-6">

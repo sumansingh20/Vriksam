@@ -3,7 +3,376 @@ import prisma from '../config/database';
 import { parsePagination, buildPaginatedResponse } from '../types';
 import { Prisma } from '@prisma/client';
 
+interface CatalogStatusCounts {
+  total: number;
+  healthy: number;
+  needsAttention: number;
+  critical: number;
+}
+
+interface CatalogItem {
+  id: string;
+  slug: string;
+  name: string;
+  scientificName: string;
+  category: string;
+  categories: string[];
+  lightRequirement: string;
+  difficulty: string;
+  description: string | null;
+  careInstructions: string | null;
+  imageUrl: string | null;
+  humidityPreference: string | null;
+  temperatureMin: number | null;
+  temperatureMax: number | null;
+  plantCount: number;
+  healthyPlantCount: number;
+  needsAttentionCount: number;
+  criticalCount: number;
+  healthRatio: number;
+  healthBand: 'Excellent' | 'Good' | 'Needs Attention' | 'No Data';
+  inventoryQuantity: number;
+  averageUnitCost: number | null;
+  minUnitCost: number | null;
+  maxUnitCost: number | null;
+  updatedAt: Date;
+}
+
+function slugify(value: string): string {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-');
+}
+
+function toCatalogSlug(name: string, id: string): string {
+  return `${slugify(name)}--${id}`;
+}
+
+function parseCatalogId(slugOrId: string): string | null {
+  if (!slugOrId) return null;
+
+  const fromSlug = slugOrId.includes('--')
+    ? slugOrId.split('--').pop()
+    : slugOrId;
+
+  if (!fromSlug) return null;
+
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(fromSlug)
+    ? fromSlug
+    : null;
+}
+
+function toHealthBand(ratio: number, total: number): CatalogItem['healthBand'] {
+  if (total === 0) return 'No Data';
+  if (ratio >= 0.8) return 'Excellent';
+  if (ratio >= 0.6) return 'Good';
+  return 'Needs Attention';
+}
+
+function mapCatalogItem(
+  species: {
+    id: string;
+    commonName: string;
+    scientificName: string;
+    category: string;
+    lightRequirement: string;
+    difficulty: string;
+    description: string | null;
+    careInstructions: string | null;
+    imageUrl: string | null;
+    humidityPreference: string | null;
+    temperatureMin: number | null;
+    temperatureMax: number | null;
+    updatedAt: Date;
+    inventory: Array<{ quantity: number; cost: number }>;
+  },
+  counts: CatalogStatusCounts
+): CatalogItem {
+  const costs = species.inventory
+    .map((item) => Number(item.cost || 0))
+    .filter((cost) => cost > 0);
+
+  const inventoryQuantity = species.inventory.reduce(
+    (sum, item) => sum + Number(item.quantity || 0),
+    0
+  );
+
+  const averageUnitCost =
+    costs.length > 0
+      ? costs.reduce((sum, cost) => sum + cost, 0) / costs.length
+      : null;
+
+  const minUnitCost = costs.length > 0 ? Math.min(...costs) : null;
+  const maxUnitCost = costs.length > 0 ? Math.max(...costs) : null;
+  const healthRatio = counts.total > 0 ? counts.healthy / counts.total : 0;
+
+  return {
+    id: species.id,
+    slug: toCatalogSlug(species.commonName, species.id),
+    name: species.commonName,
+    scientificName: species.scientificName,
+    category: species.category,
+    categories: species.category
+      .split(',')
+      .map((value) => value.trim())
+      .filter(Boolean),
+    lightRequirement: species.lightRequirement,
+    difficulty: species.difficulty,
+    description: species.description,
+    careInstructions: species.careInstructions,
+    imageUrl: species.imageUrl,
+    humidityPreference: species.humidityPreference,
+    temperatureMin: species.temperatureMin,
+    temperatureMax: species.temperatureMax,
+    plantCount: counts.total,
+    healthyPlantCount: counts.healthy,
+    needsAttentionCount: counts.needsAttention,
+    criticalCount: counts.critical,
+    healthRatio,
+    healthBand: toHealthBand(healthRatio, counts.total),
+    inventoryQuantity,
+    averageUnitCost,
+    minUnitCost,
+    maxUnitCost,
+    updatedAt: species.updatedAt,
+  };
+}
+
 export const plantsController = {
+  /**
+   * GET /plants/catalog
+   * Public marketplace catalog with real species + inventory + health aggregates
+   */
+  async listCatalog(req: Request, res: Response): Promise<void> {
+    try {
+      const { page, limit } = parsePagination(req.query);
+      const { search, category, light, difficulty, sortBy } = req.query;
+
+      const where: Prisma.PlantSpeciesWhereInput = { isActive: true };
+
+      if (search && typeof search === 'string') {
+        where.OR = [
+          { commonName: { contains: search, mode: 'insensitive' } },
+          { scientificName: { contains: search, mode: 'insensitive' } },
+          { category: { contains: search, mode: 'insensitive' } },
+        ];
+      }
+
+      if (category && typeof category === 'string' && category !== 'All') {
+        where.category = { contains: category, mode: 'insensitive' };
+      }
+
+      if (light && typeof light === 'string' && light !== 'All') {
+        where.lightRequirement = light as Prisma.EnumLightRequirementFilter;
+      }
+
+      if (difficulty && typeof difficulty === 'string' && difficulty !== 'All') {
+        where.difficulty = difficulty as Prisma.EnumDifficultyLevelFilter;
+      }
+
+      const species = await prisma.plantSpecies.findMany({
+        where,
+        select: {
+          id: true,
+          commonName: true,
+          scientificName: true,
+          category: true,
+          lightRequirement: true,
+          difficulty: true,
+          description: true,
+          careInstructions: true,
+          imageUrl: true,
+          humidityPreference: true,
+          temperatureMin: true,
+          temperatureMax: true,
+          updatedAt: true,
+          inventory: {
+            select: {
+              quantity: true,
+              cost: true,
+            },
+          },
+        },
+      });
+
+      const speciesIds = species.map((item) => item.id);
+
+      const groupedStatuses = speciesIds.length
+        ? await prisma.plant.groupBy({
+            by: ['speciesId', 'status'],
+            where: {
+              isActive: true,
+              speciesId: { in: speciesIds },
+            },
+            _count: { _all: true },
+          })
+        : [];
+
+      const statusCounts = groupedStatuses.reduce<Record<string, CatalogStatusCounts>>(
+        (acc, group) => {
+          const current =
+            acc[group.speciesId] ||
+            ({ total: 0, healthy: 0, needsAttention: 0, critical: 0 } as CatalogStatusCounts);
+
+          const count = group._count._all;
+          current.total += count;
+
+          if (group.status === 'HEALTHY') {
+            current.healthy += count;
+          }
+          if (group.status === 'NEEDS_ATTENTION') {
+            current.needsAttention += count;
+          }
+          if (group.status === 'CRITICAL') {
+            current.critical += count;
+          }
+
+          acc[group.speciesId] = current;
+          return acc;
+        },
+        {}
+      );
+
+      const catalogItems = species.map((item) =>
+        mapCatalogItem(
+          item,
+          statusCounts[item.id] || {
+            total: 0,
+            healthy: 0,
+            needsAttention: 0,
+            critical: 0,
+          }
+        )
+      );
+
+      const sortKey = typeof sortBy === 'string' ? sortBy : 'popular';
+      catalogItems.sort((a, b) => {
+        switch (sortKey) {
+          case 'name':
+            return a.name.localeCompare(b.name);
+          case 'price-asc':
+            return (a.minUnitCost ?? Number.MAX_SAFE_INTEGER) - (b.minUnitCost ?? Number.MAX_SAFE_INTEGER);
+          case 'price-desc':
+            return (b.minUnitCost ?? 0) - (a.minUnitCost ?? 0);
+          case 'inventory':
+            return b.inventoryQuantity - a.inventoryQuantity;
+          case 'newest':
+            return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+          case 'health':
+            return b.healthRatio - a.healthRatio;
+          case 'popular':
+          default:
+            return b.plantCount - a.plantCount;
+        }
+      });
+
+      const total = catalogItems.length;
+      const start = (page - 1) * limit;
+      const paginated = catalogItems.slice(start, start + limit);
+
+      res.status(200).json({
+        success: true,
+        ...buildPaginatedResponse(paginated, total, page, limit),
+      });
+    } catch (error) {
+      console.error('List marketplace catalog error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch marketplace catalog.',
+      });
+    }
+  },
+
+  /**
+   * GET /plants/catalog/:slug
+   * Public single marketplace catalog item
+   */
+  async getCatalogItem(req: Request, res: Response): Promise<void> {
+    try {
+      const slug = String(req.params.slug || '');
+      const id = parseCatalogId(slug);
+
+      if (!id) {
+        res.status(404).json({
+          success: false,
+          error: 'Catalog item not found.',
+        });
+        return;
+      }
+
+      const species = await prisma.plantSpecies.findFirst({
+        where: { id, isActive: true },
+        select: {
+          id: true,
+          commonName: true,
+          scientificName: true,
+          category: true,
+          lightRequirement: true,
+          difficulty: true,
+          description: true,
+          careInstructions: true,
+          imageUrl: true,
+          humidityPreference: true,
+          temperatureMin: true,
+          temperatureMax: true,
+          updatedAt: true,
+          inventory: {
+            select: {
+              quantity: true,
+              cost: true,
+            },
+          },
+        },
+      });
+
+      if (!species) {
+        res.status(404).json({
+          success: false,
+          error: 'Catalog item not found.',
+        });
+        return;
+      }
+
+      const groupedStatuses = await prisma.plant.groupBy({
+        by: ['status'],
+        where: {
+          isActive: true,
+          speciesId: species.id,
+        },
+        _count: { _all: true },
+      });
+
+      const counts: CatalogStatusCounts = {
+        total: 0,
+        healthy: 0,
+        needsAttention: 0,
+        critical: 0,
+      };
+
+      groupedStatuses.forEach((group) => {
+        const count = group._count._all;
+        counts.total += count;
+        if (group.status === 'HEALTHY') counts.healthy += count;
+        if (group.status === 'NEEDS_ATTENTION') counts.needsAttention += count;
+        if (group.status === 'CRITICAL') counts.critical += count;
+      });
+
+      res.status(200).json({
+        success: true,
+        data: mapCatalogItem(species, counts),
+      });
+    } catch (error) {
+      console.error('Get marketplace catalog item error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch catalog item.',
+      });
+    }
+  },
+
   /**
    * GET /plants
    * List all plants with pagination, search, and filters

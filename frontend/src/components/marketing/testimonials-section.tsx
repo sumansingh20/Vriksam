@@ -181,7 +181,7 @@ export function TestimonialsSection() {
                 className="pt-6"
               >
                 <blockquote className="text-xl sm:text-2xl lg:text-3xl font-medium leading-relaxed text-gray-900 font-display">
-                  "{t.quote}"
+                  &ldquo;{t.quote}&rdquo;
                 </blockquote>
               </motion.div>
             </AnimatePresence>

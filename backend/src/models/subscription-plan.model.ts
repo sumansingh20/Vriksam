@@ -82,7 +82,6 @@ const subscriptionPlanSchema = new Schema<ISubscriptionPlanDocument, ISubscripti
     slug: {
       type: String,
       required: [true, 'Slug is required'],
-      unique: true,
       trim: true,
       lowercase: true,
     },

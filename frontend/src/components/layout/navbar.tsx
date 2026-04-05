@@ -16,8 +16,8 @@ import {
   ChevronDown,
   ArrowRight,
   Building2,
-  Home,
-  Trees,
+  Activity,
+  BarChart3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -30,22 +30,22 @@ const navLinks = [
 
 const solutionsItems = [
   {
-    label: "Corporate Greenery",
-    href: "/solutions/corporate",
-    description: "Transform office spaces with biophilic design and managed plant ecosystems.",
+    label: "Workplace Rollouts",
+    href: "/contact",
+    description: "Plan deployment for offices, campuses, and multi-site portfolios.",
     icon: Building2,
   },
   {
-    label: "Residential Gardens",
-    href: "/solutions/residential",
-    description: "Curated garden plans and ongoing care for homes and communities.",
-    icon: Home,
+    label: "Live Marketplace",
+    href: "/marketplace",
+    description: "Browse active species catalog with care details and live availability.",
+    icon: Activity,
   },
   {
-    label: "Public Spaces",
-    href: "/solutions/public",
-    description: "Large-scale urban greening for parks, campuses, and civic areas.",
-    icon: Trees,
+    label: "Operational Reporting",
+    href: "/case-studies",
+    description: "Explore outcome stories and reporting-ready implementation patterns.",
+    icon: BarChart3,
   },
 ];
 
@@ -245,11 +245,11 @@ export function Navbar() {
                     {/* Bottom CTA strip */}
                     <div className="mt-1 border-t border-gray-100 pt-2 pb-1 px-4">
                       <Link
-                        href="/solutions"
+                        href="/case-studies"
                         onClick={() => setSolutionsOpen(false)}
                         className="group inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 transition-colors hover:text-emerald-700"
                       >
-                        View all solutions
+                        View implementation stories
                         <ArrowRight className="h-3 w-3 transition-transform duration-150 group-hover:translate-x-0.5" />
                       </Link>
                     </div>

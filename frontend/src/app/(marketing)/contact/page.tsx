@@ -103,7 +103,7 @@ export default function ContactPage() {
                     Message sent!
                   </h3>
                   <p className="mt-2 text-sm leading-relaxed text-gray-500">
-                    We'll be in touch within 24 hours.
+                    We&apos;ll be in touch within 24 hours.
                   </p>
                   <button
                     type="button"
@@ -121,7 +121,7 @@ export default function ContactPage() {
                   </button>
                 </motion.div>
               ) : (
-                <form onSubmit={handleSubmit} className="space-y-5">
+                <form id="contact-form" onSubmit={handleSubmit} className="space-y-5">
                   {/* Full name */}
                   <div>
                     <label
@@ -196,7 +196,7 @@ export default function ContactPage() {
                       className={cn(inputClasses, 'appearance-none')}
                     >
                       <option>General Inquiry</option>
-                      <option>Schedule a Demo</option>
+                      <option>Schedule a Consultation</option>
                       <option>Partnership</option>
                       <option>Support</option>
                     </select>
@@ -344,14 +344,14 @@ export default function ContactPage() {
               Prefer to schedule a call?
             </p>
             <p className="mt-2 text-sm text-gray-500">
-              Book a 30-minute demo with our team and see the platform in
+              Book a 30-minute consultation with our team and see the platform in
               action.
             </p>
             <a
-              href="/demo"
+              href="#contact-form"
               className="mt-6 inline-flex items-center gap-2 rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-gray-800"
             >
-              Book a demo
+              Book a consultation
               <ArrowRight className="h-4 w-4" />
             </a>
           </motion.div>

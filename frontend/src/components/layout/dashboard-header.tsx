@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, Fragment } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
@@ -24,6 +25,7 @@ interface Breadcrumb {
 }
 
 interface DashboardHeaderProps {
+  role?: "admin" | "client" | "technician" | "partner";
   breadcrumbs?: Breadcrumb[];
   notificationCount?: number;
   userName?: string;
@@ -31,11 +33,20 @@ interface DashboardHeaderProps {
   userRole?: string;
   onMobileMenuToggle?: () => void;
   isMobileMenuOpen?: boolean;
+  onSignOut?: () => void;
+}
+
+function roleBasePath(role: DashboardHeaderProps["role"]): string {
+  if (role === "admin") return "/admin";
+  if (role === "partner") return "/partner";
+  if (role === "technician") return "/technician";
+  return "/client";
 }
 
 // --- Component ---
 
 export function DashboardHeader({
+  role = "client",
   breadcrumbs = [],
   notificationCount = 0,
   userName = "John Doe",
@@ -43,6 +54,7 @@ export function DashboardHeader({
   userRole = "Admin",
   onMobileMenuToggle,
   isMobileMenuOpen = false,
+  onSignOut,
 }: DashboardHeaderProps) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -91,11 +103,15 @@ export function DashboardHeader({
     .toUpperCase()
     .slice(0, 2);
 
+  const basePath = roleBasePath(role);
+  const profileHref = `${basePath}/settings`;
+  const settingsHref = `${basePath}/settings`;
+
   return (
     <header
       className={cn(
-        "sticky top-0 z-20 flex h-16 items-center gap-4 border-b border-gray-200 px-4 sm:px-6 lg:px-8",
-        "bg-white"
+        "sticky top-0 z-20 flex h-16 items-center gap-4 border-b border-emerald-100/60 px-4 sm:px-6 lg:px-8",
+        "bg-white/82 backdrop-blur-2xl"
       )}
     >
       {/* Mobile Menu Toggle */}
@@ -165,7 +181,7 @@ export function DashboardHeader({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search..."
-                className="h-9 w-full rounded-lg border border-gray-200 bg-white pl-9 pr-16 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none focus:ring-0"
+                className="h-9 w-full rounded-lg border border-emerald-100/80 bg-white/90 pl-9 pr-16 text-sm text-gray-900 placeholder:text-gray-400 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
                 onBlur={() => {
                   if (!searchQuery) setSearchOpen(false);
                 }}
@@ -182,7 +198,7 @@ export function DashboardHeader({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setSearchOpen(true)}
-              className="flex h-9 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-400 transition-colors hover:border-gray-300 hover:text-gray-500"
+              className="flex h-9 items-center gap-2 rounded-lg border border-emerald-100/80 bg-white/85 px-3 text-sm text-gray-400 transition-colors hover:border-emerald-200 hover:text-gray-500"
             >
               <Search className="h-4 w-4" />
               <span className="hidden sm:inline">Search...</span>
@@ -198,7 +214,7 @@ export function DashboardHeader({
       <motion.button
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 transition-colors hover:border-gray-300 hover:text-gray-700"
+        className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-emerald-100/80 bg-white/85 text-gray-500 transition-colors hover:border-emerald-200 hover:text-gray-700"
         aria-label="Notifications"
       >
         <Bell className="h-4 w-4" />
@@ -228,9 +244,11 @@ export function DashboardHeader({
           {/* Avatar */}
           <div className="relative h-8 w-8 shrink-0">
             {userAvatar ? (
-              <img
+              <Image
                 src={userAvatar}
                 alt={userName}
+                width={32}
+                height={32}
                 className="h-8 w-8 rounded-lg object-cover"
               />
             ) : (
@@ -257,7 +275,7 @@ export function DashboardHeader({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 8, scale: 0.96 }}
               transition={{ duration: 0.15 }}
-              className="absolute right-0 mt-2 w-56 origin-top-right overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl shadow-black/5"
+              className="absolute right-0 mt-2 w-56 origin-top-right overflow-hidden rounded-xl border border-emerald-100/80 bg-white/95 shadow-xl shadow-black/5 backdrop-blur-xl"
             >
               <div className="border-b border-gray-100 px-4 py-3">
                 <p className="text-sm font-medium text-gray-900">
@@ -268,9 +286,9 @@ export function DashboardHeader({
 
               <div className="py-1.5">
                 {[
-                  { icon: User, label: "Profile", href: "/profile" },
-                  { icon: Settings, label: "Settings", href: "/settings" },
-                  { icon: HelpCircle, label: "Help & Support", href: "/help" },
+                  { icon: User, label: "Profile", href: profileHref },
+                  { icon: Settings, label: "Settings", href: settingsHref },
+                  { icon: HelpCircle, label: "Help & Support", href: "/contact" },
                 ].map((item) => (
                   <Link
                     key={item.label}
@@ -286,7 +304,11 @@ export function DashboardHeader({
 
               <div className="border-t border-gray-100 py-1.5">
                 <button
-                  onClick={() => setUserMenuOpen(false)}
+                  type="button"
+                  onClick={() => {
+                    setUserMenuOpen(false);
+                    onSignOut?.();
+                  }}
                   className="flex w-full items-center gap-3 px-4 py-2 text-sm text-red-600 transition-colors hover:bg-red-50"
                 >
                   <LogOut className="h-4 w-4" />

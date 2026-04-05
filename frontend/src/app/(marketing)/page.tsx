@@ -12,10 +12,10 @@ import { CTASection } from '@/components/marketing/cta-section';
 export default function MarketingPage() {
   return (
     <>
-      {/* 1. Cinematic hero — full viewport, 3D scene */}
+      {/* 1. Cinematic hero — full viewport */}
       <HeroSection />
 
-      {/* 2. Social proof numbers — light, airy */}
+      {/* 2. Social proof numbers */}
       <StatsSection />
 
       {/* 3. How it works — step-by-step process */}

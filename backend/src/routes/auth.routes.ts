@@ -8,6 +8,8 @@ import {
   refreshTokenSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
+  updateProfileSchema,
+  changePasswordSchema,
 } from '../validators/auth.validator';
 import authController from '../controllers/auth.controller';
 
@@ -23,5 +25,7 @@ router.post('/reset-password', passwordResetLimiter, validate(resetPasswordSchem
 // Protected routes
 router.post('/logout', authenticate, authController.logout);
 router.get('/me', authenticate, authController.getMe);
+router.patch('/me', authenticate, validate(updateProfileSchema), authController.updateMe);
+router.post('/change-password', authenticate, validate(changePasswordSchema), authController.changePassword);
 
 export default router;

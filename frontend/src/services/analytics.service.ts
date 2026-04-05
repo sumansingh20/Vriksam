@@ -3,14 +3,7 @@
 // =============================================================================
 
 import api from './api';
-import type {
-  ApiResponse,
-  DashboardStats,
-  PlantAnalytics,
-  RevenueMetrics,
-  ESGMetrics,
-  TeamPerformance,
-} from '@/types';
+import type { ApiResponse } from '@/types';
 
 const ANALYTICS_PREFIX = '/analytics';
 
@@ -19,11 +12,44 @@ const ANALYTICS_PREFIX = '/analytics';
 // -----------------------------------------------------------------------------
 
 export interface AnalyticsFilters {
-  period?: 'week' | 'month' | 'quarter' | 'year';
+  period?: 'week' | 'month' | 'quarter' | 'year' | 'monthly' | 'quarterly' | 'yearly';
   startDate?: string;
   endDate?: string;
   locationId?: string;
   clientId?: string;
+}
+
+export interface OverviewStatsData {
+  totalClients: number;
+  activeClients: number;
+  totalPlants: number;
+  healthyPlants: number;
+  criticalPlants: number;
+  totalTechnicians: number;
+  activeTechnicians: number;
+  pendingVisits: number;
+  completedVisitsThisMonth: number;
+  monthlyRevenue: number;
+  pendingInvoices: number;
+}
+
+export interface PlantMetricsData {
+  statusDistribution: Record<string, number>;
+  speciesDistribution: Array<{ species: string; count: number }>;
+  averageHealthScore: number;
+  survivalRate: number;
+  plantsByLocation: Array<{ location: string; count: number }>;
+  recentHealthTrend: Array<{ date: string; avgScore: number }>;
+}
+
+export interface RevenueMetricsData {
+  totalRevenue: number;
+  periodRevenue: number;
+  revenueGrowth: number;
+  revenueTrend: Array<{ period: string; revenue: number }>;
+  revenueByPlan: Array<{ plan: string; revenue: number }>;
+  outstandingAmount: number;
+  collectionRate: number;
 }
 
 // -----------------------------------------------------------------------------
@@ -31,20 +57,45 @@ export interface AnalyticsFilters {
 // -----------------------------------------------------------------------------
 
 export interface MaintenanceMetricsData {
-  totalVisits: number;
+  totalVisitsThisMonth: number;
   completionRate: number;
-  avgDuration: number;
-  onTimeRate: number;
-  visitsByType: Array<{ type: string; count: number }>;
-  visitsTrend: Array<{ date: string; value: number }>;
+  averageDuration: number;
+  averageRating: number;
+  visitsByType: Record<string, number>;
+  visitsByStatus: Record<string, number>;
+  topTechnicians: Array<{ name: string; visits: number; rating: number }>;
+  missedVisitRate: number;
+}
+
+export interface ESGMetricsData {
+  totalCO2Absorbed: number;
+  totalO2Produced: number;
+  averageAirPurifyingScore: number;
+  greenScore: number;
+  totalActivePlants: number;
+  speciesWithHighAirPurifying: number;
+  carbonOffsetEquivalent: number;
+  environmentalImpactSummary: string;
+}
+
+export interface TeamPerformanceData {
+  teams: Array<{
+    name: string;
+    zone: string | null;
+    memberCount: number;
+    totalVisits: number;
+    completionRate: number;
+    averageRating: number;
+    leadName: string | null;
+  }>;
 }
 
 export const analyticsService = {
   /**
    * Get high-level dashboard overview statistics.
    */
-  async getOverview(filters?: AnalyticsFilters): Promise<DashboardStats> {
-    const response = await api.get<ApiResponse<DashboardStats>>(
+  async getOverview(filters?: AnalyticsFilters): Promise<OverviewStatsData> {
+    const response = await api.get<ApiResponse<OverviewStatsData>>(
       `${ANALYTICS_PREFIX}/overview`,
       {
         params: {
@@ -62,8 +113,8 @@ export const analyticsService = {
   /**
    * Get plant health distribution, trends, and category breakdowns.
    */
-  async getPlantMetrics(filters?: AnalyticsFilters): Promise<PlantAnalytics> {
-    const response = await api.get<ApiResponse<PlantAnalytics>>(
+  async getPlantMetrics(filters?: AnalyticsFilters): Promise<PlantMetricsData> {
+    const response = await api.get<ApiResponse<PlantMetricsData>>(
       `${ANALYTICS_PREFIX}/plants`,
       {
         params: {
@@ -81,12 +132,21 @@ export const analyticsService = {
   /**
    * Get revenue analytics including trends and plan breakdowns.
    */
-  async getRevenue(filters?: AnalyticsFilters): Promise<RevenueMetrics> {
-    const response = await api.get<ApiResponse<RevenueMetrics>>(
+  async getRevenue(filters?: AnalyticsFilters): Promise<RevenueMetricsData> {
+    const mappedPeriod =
+      filters?.period === 'quarter'
+        ? 'quarterly'
+        : filters?.period === 'year'
+          ? 'yearly'
+          : filters?.period === 'quarterly' || filters?.period === 'yearly'
+            ? filters.period
+            : 'monthly';
+
+    const response = await api.get<ApiResponse<RevenueMetricsData>>(
       `${ANALYTICS_PREFIX}/revenue`,
       {
         params: {
-          period: filters?.period,
+          period: mappedPeriod,
           startDate: filters?.startDate,
           endDate: filters?.endDate,
         },
@@ -118,8 +178,8 @@ export const analyticsService = {
   /**
    * Get ESG (Environmental, Social, Governance) sustainability metrics.
    */
-  async getESG(filters?: AnalyticsFilters): Promise<ESGMetrics> {
-    const response = await api.get<ApiResponse<ESGMetrics>>(
+  async getESG(filters?: AnalyticsFilters): Promise<ESGMetricsData> {
+    const response = await api.get<ApiResponse<ESGMetricsData>>(
       `${ANALYTICS_PREFIX}/esg`,
       {
         params: {
@@ -138,9 +198,9 @@ export const analyticsService = {
    */
   async getTeamPerformance(
     filters?: AnalyticsFilters
-  ): Promise<TeamPerformance> {
-    const response = await api.get<ApiResponse<TeamPerformance>>(
-      `${ANALYTICS_PREFIX}/team`,
+  ): Promise<TeamPerformanceData> {
+    const response = await api.get<ApiResponse<TeamPerformanceData>>(
+      `${ANALYTICS_PREFIX}/teams`,
       {
         params: {
           period: filters?.period,
